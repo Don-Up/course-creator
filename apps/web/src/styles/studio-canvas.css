@@ -1,0 +1,197 @@
+
+/* Workflow node types use both hue and border treatment, not color alone. */
+.workflow-canvas-legend {
+    gap: 7px 8px;
+}
+
+.workflow-canvas-legend span {
+    padding: 5px 7px;
+    border: 1px solid;
+    border-radius: 999px;
+    font-weight: 800;
+}
+
+.workflow-canvas-legend .llm {
+    border-color: #a5cf54;
+    color: #547d09;
+    background: #effbd5;
+}
+
+.workflow-canvas-legend .hybrid {
+    border-color: #7cb89d;
+    color: #25644a;
+    background: #e4f5eb;
+}
+
+.workflow-canvas-legend .deterministic {
+    border-color: #9baee4;
+    color: #3f589a;
+    background: #ebf0ff;
+}
+
+.workflow-canvas-legend .approval {
+    border-color: #e8bb72;
+    color: #93611e;
+    background: #fff2d9;
+}
+
+.workflow-canvas-legend .system {
+    border-color: #bcc6c0;
+    color: #5e6a62;
+    background: #edf0ee;
+}
+
+.workflow-canvas-node {
+    gap: 6px;
+    border-width: 1.5px;
+    border-left-width: 6px;
+}
+
+.workflow-canvas-node.llm {
+    border-color: #a5cf54;
+    border-left-color: #6d9e16;
+    background: #f3fcdf;
+}
+
+.workflow-canvas-node.hybrid {
+    border-color: #7cb89d;
+    border-left-color: #398568;
+    background: #e9f8ee;
+}
+
+.workflow-canvas-node.deterministic {
+    border-color: #9baee4;
+    border-left-color: #5877c5;
+    background: #edf2ff;
+}
+
+.workflow-canvas-node.approval {
+    border-color: #e8bb72;
+    border-left-color: #c9832a;
+    background: #fff4df;
+}
+
+.workflow-canvas-node.system {
+    border-color: #bcc6c0;
+    border-left-color: #78867d;
+    background: #f1f4f2;
+}
+
+.workflow-canvas-node-kind {
+    gap: 5px;
+    width: max-content;
+    max-width: 100%;
+    padding: 4px 6px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    background: rgb(255 255 255 / .55);
+}
+
+.workflow-canvas-node-kind small {
+    margin-left: 3px;
+    color: #6e7c68;
+    font-size: 8px;
+    font-weight: 700;
+}
+
+.workflow-canvas-node.llm .workflow-canvas-node-kind {
+    color: #567f0b;
+}
+
+.workflow-canvas-node.hybrid .workflow-canvas-node-kind {
+    color: #2f7155;
+}
+
+.workflow-canvas-node.deterministic .workflow-canvas-node-kind {
+    color: #4864a7;
+}
+
+.workflow-canvas-node.approval .workflow-canvas-node-kind {
+    color: #9d691e;
+}
+
+.workflow-canvas-node.system .workflow-canvas-node-kind {
+    color: #637068;
+}
+
+.workflow-canvas-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    align-self: flex-start;
+    padding: 6px 8px;
+    border: 1px solid #cbd6c4;
+    border-radius: 6px;
+    color: #3f4f3a;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.workflow-canvas-toggle:hover {
+    border-color: #98ba4c;
+    background: #f7fdea;
+}
+
+.workflow-canvas-toggle svg {
+    transition: transform .18s ease;
+}
+
+.workflow-canvas-toggle svg.collapsed {
+    transform: rotate(-90deg);
+}
+
+.workflow-canvas-node p {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    color: #51604d;
+    font-size: 9px;
+    line-height: 1.42;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.workflow-canvas-node .react-flow__handle-top,
+.workflow-canvas-node .react-flow__handle-bottom {
+    opacity: 0;
+}
+
+.workflow-canvas-node .react-flow__handle-left,
+.workflow-canvas-node .react-flow__handle-right {
+    width: 6px;
+    height: 6px;
+    border: 1px solid #3f5238;
+    background: #f8fbf5;
+}
+
+.workflow-node-inspector>div>p {
+    margin: 4px 0 0;
+    color: #63705e;
+    font-size: 10px;
+}
+
+.workflow-node-inspector code {
+    color: #54634f;
+    font-size: 8px;
+}
+
+.workflow-canvas .workflow-canvas-edge.approval .react-flow__edge-path {
+    stroke: #bd842d;
+    stroke-width: 2;
+}
+
+.workflow-canvas .workflow-canvas-edge.branch .react-flow__edge-path {
+    stroke: #90a54d;
+    stroke-width: 1.9;
+    stroke-dasharray: 6 4;
+}
+
+.workflow-canvas .workflow-canvas-edge.stop .react-flow__edge-path {
+    stroke: #a46b5d;
+    stroke-width: 1.7;
+    stroke-dasharray: 3 5;
+}
+

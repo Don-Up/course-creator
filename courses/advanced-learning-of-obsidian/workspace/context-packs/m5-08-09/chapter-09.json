@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "course_context": {
+    "title": "从零开始，学会搭建一个酷炫的 Obsidian 个人知识库",
+    "mission": "# 课程 MISSION\n\n## 课程标识\n- 课程名称：从零开始，学会搭建一个酷炫的 Obsidian 个人知识库\n- 课程 slug：advanced-learning-of-obsidian\n- 版本：1.0\n\n## 受众\n课程面向 0 基础或只有少量编程经验、对 AI 全栈开发感兴趣的学习者。默认学习者只掌握简单的编程基础，希望通过本课程完整学习 RAG 和 Obsidian，因此首次出现的术语、概念和复杂机制都要先解释并提供必要铺垫。\n\n## 学习成果\n1. 理解 Obsidian 是什么、为什么出现、解决什么问题，以及与 RAG 的异同。\n2. 能够解释 Obsidian 在 AI 工程化领域中的作用。\n3. 独立完成从基础使用到搭建一个个人的 Obsidian 知识库的渐进实践。\n4. 掌握面向 RAG 的 Markdown 数据建模、AST 解析与分块策略。\n5. 能够通过插件架构接入云端大模型 API，并理解其工作原理。\n6. 具备部署全本地离线 RAG 架构（Ollama + 本地向量数据库）的能力。\n7. 熟悉混合检索与重排序技术，解决传统 RAG 召回精度问题。\n8. 理解 GraphRAG 原理，并能将 Obsidian 双链与知识图谱融合。\n9. 能够通过 MCP 将 Obsidian 知识库暴露为外部工具的上下文服务。\n10. 掌握 RAG 效果评估与知识库维护方法，实现 Agentic 工作流闭环。\n\n## 范围\n本课程共 9 章，每章有效字符数不低于 10,000 字，内容覆盖以下主题：\n\n### 第 1 章：个人知识库选型与 RAG 演进哲学\n知识库工具选型对比：Obsidian (Local-first Markdown)、Notion (Cloud/Block DB)、企业级 RAG 系统 (Dify / RAGFlow)。RAG 架构的演进脉络：Naive RAG → Advanced RAG → GraphRAG → Agentic RAG/MCP。学习目标：理解各选型的适用场景，明确为何 Obsidian 是开发者搭建“个人 AI 第二大脑”的最佳本地轻量级载体。\n\n### 第 2 章：面向 RAG 的 Markdown 数据建模与 AST 解析\n高质量向量化数据源搭建：原子化笔记、YAML Frontmatter 元数据设计。Markdown 的分块策略：基于 AST 的递归切分，父子文档策略。学习目标：掌握针对 Markdown 文本的数据清洗与结构化设计，提升召回准度。\n\n### 第 3 章：插件架构拆解与云端 API 快速落地\nObsidian 流行 AI 插件工作原理拆解：Smart Connections 本地索引缓存、Copilot/Smart Composer 的上下文窗口与流式输出。接入云端大模型 API（DeepSeek / OpenAI / Claude），检查本地向量数据结构。学习目标：跑通端到端链路，并从代码逻辑层面理解插件与 Obsidian API 的交互。\n\n### 第 4 章：全本地离线闭环——Ollama + 本地 Vector DB 部署\n本地模型选型与算力评估：Embedding 模型（bge-m3、nomic-embed-text），LLM 推理引擎（Ollama / LM Studio 部署 Qwen2.5 或 DeepSeek-R1 蒸馏版）。配置本地服务暴露 OpenAI 兼容接口，实现 100% 离线运行、零数据上云的本地 RAG。学习目标：建立一套不依赖任何外部付费 API 的私有安全 RAG 架构。\n\n### 第 5 章：Advanced RAG 进阶——混合检索与 Re-ranking\n纯向量检索的局限，混合检索架构：Sparse Search (BM25) + Dense Search 融合算法 (RRF)。引入重排序模型（bge-reranker）对 Top-K 结果二次打分。学习目标：解决传统 RAG 召回精度差、检索“似是而非”的痛点。\n\n### 第 6 章：突破语义局限——基于 Obsidian 双链的 GraphRAG\n向量 RAG 的瓶颈，GraphRAG 原理：实体与关系提取，构建知识图谱。微软 GraphRAG 理念与轻量级实现（LightRAG / Simple Graph Builder 插件）。Obsidian 原生双链作为显式图边，实现多跳推理。学习目标：掌握 GraphRAG 理论与双链结合方式，提升 AI 处理复杂逻辑关联的能力。\n\n### 第 7 章：Obsidian 3D 视觉化——关系图谱与进阶效果\n基于社区插件的 3D 关系图谱实现，将平面笔记网络转化为立体、可旋转的动态三维空间。讲解插件安装配置、视觉效果优化、与双链知识的结合，以及利用 3D 图谱辅助知识探索与创意发现。学习目标：掌握 Obsidian 3D 图谱的启用与定制，理解其渲染原理，并将三维视觉化融入个人知识库的探索与展示流程。\n\n### 第 8 章：开发者扩展——基于 MCP 与外部生态联动\nMCP 协议介绍，将 Obsidian 知识库作为 MCP Server 暴露给 Cursor、Claude Code 等工具。自动化脚本开发：Python 监听文件变动，配合 LangChain/LlamaIndex 自动更新外部向量数据库。学习目标：让 Obsidian 成为全工作流的上下文提供者。\n\n### 第 9 章：知识库评估、维护与 Agentic 工作流闭环\nRAG 效果评估：RAGAS 框架的忠实度、答案相关性、上下文精准度。知识库防衰退与垃圾回收，增量更新中的向量漂移与冗余清理。Agentic 闭环工作流：提出课题 → 检索 → 生成草稿 → 自动创建笔记并写回双链和 Tag。学习目标：实现知识从输入到检索、辅助思考、自动写回的可持续演进闭环。\n\n## 前置条件\n- 具备基本的计算机操作能力，能够安装和配置软件。\n- 了解简单的编程概念（如变量、函数、命令行操作），但不需要深入。\n- 拥有一台能连接互联网的个人电脑（Windows/macOS/Linux 均可）。\n- 愿意在本地环境中进行实验和配置。\n\n## 交付物\n- 全部 9 章课程内容，以 Markdown + HTML 格式交付。\n- 每章包含详细的概念讲解、操作步骤、代码示例、配置说明和常见问题排查。\n- 配套的示例仓库、配置文件模板和检查清单。\n- 最终学习者将拥有一个完全可运行的本地 Obsidian 知识库及 RAG 系统。\n\n## 来源政策\n允许使用用户提供的资料与公开官方资料（包括 Obsidian 官方文档、插件文档、模型官方说明等）。所有引用需注明出处，不得直接复制受版权保护的内容。\n\n## 人工闸门\n- 每章内容生成后，须经过人工审核确认方可进入下一章。\n- 质量门包括：逐章 Humanizer、构建、确定性检查、语义审校、人工确认。\n- 自动返工上限：同类问题连续三轮后转人工处理。\n- 任何涉及安全、破坏性操作或重大架构变更的步骤，必须高亮警示并建议在隔离环境中先行测试。\n\n## 成功标准\n1. 学习者能够独立完成课程所有章节的实践操作，并成功搭建本地 Obsidian 知识库及 RAG 系统。\n2. 学习者能够解释每一步的原理，而非仅机械执行命令。\n3. 学习者能够根据自己的需求，对课程中的配置进行自定义调整（如更换模型、调整分块策略）。\n4. 课程内容在交付后，经至少 3 名目标受众测试，完成率超过 80%，且无重大流程性错误。\n5. 每章有效字符数均不低于 10,000 字，内容密度满足深度学习需求。\n6. 所有代码和配置均可复现，无因版本漂移导致的阻塞问题。\n",
+    "request": {
+      "title": "从零开始，学会搭建一个酷炫的 Obsidian 个人知识库",
+      "slug": "advanced-learning-of-obsidian",
+      "audience": "课程面向 [[0 基础或只有少量编程经验、对 AI 全栈开发感兴趣的学习者]]。默认学习者只掌握简单的编程基础，希望通过本课程完整学习 RAG 和 Obsidian，因此首次出现的术语、概念和复杂机制都要先解释并提供必要铺垫。",
+      "goals": "帮助学习者理解 Obsidian 是什么、为什么出现、解决什么问题，以及与 RAG 的异同；能够解释它在 AI 工程化领域中的作用，并独立完成从基础使用到搭建一个个人的 Obsidian 知识库的渐进实践。",
+      "scope": "第 1 章：个人知识库选型与 RAG 演进哲学知识库工具选型对比：Obsidian (Local-first Markdown)： 纯文本、透明的 AST 语法树、支持 Git 版本控制，极度适合做细粒度的语义分块与本地索引。  Notion (Cloud/Block DB)： 基于 Block JSON 的数据结构，存在 API 速率限制与云端数据锁死风险。企业级 RAG 系统 (Dify / RAGFlow)： 重型多租户 ETL 管道 + Postgres/Milvus 向量库，适合海量非结构化文档，但对个人碎片化思考治理过于笨重。RAG 架构的演进脉络：$\\text{Naive RAG (纯向量相似度)} \\rightarrow \\text{Advanced RAG (混合检索+重排序)} \\rightarrow \\text{GraphRAG (图拓扑推理)} \\rightarrow \\text{Agentic RAG/MCP}$。学习目标： 理解各选型的适用场景，明确为何 Obsidian 是开发者搭建“个人 AI 第二大脑”的最佳本地轻量级载体。第 2 章：面向 RAG 的 Markdown 数据建模与 AST 解析高质量向量化数据源搭建：原子化笔记（Atomic Notes）： 单文件聚焦单一概念，天然解决重叠上下文（Overlapping Context）问题。YAML Frontmatter 元数据设计： 规范 tags、status、type，为 RAG 阶段的元数据过滤（Metadata Filtering）打下基础。Markdown 的分块（Chunking）策略：为什么传统的“固定字符数切分（Fixed-size Chunking）”会破坏 Markdown 的语义结构？基于 Markdown AST（抽象语法树） 的分块：按 H1/H2/H3 标题递归切分，以及父子文档（Parent-Child / Small-to-Big Chunking）策略。学习目标： 掌握针对 Markdown 文本的数据清洗与结构化设计，提升召回准度。第 3 章：插件架构拆解与云端 API 快速落地Obsidian 流行 AI 插件工作原理拆解：Smart Connections： 如何在本地处理 Markdown 文件变动，并将 Embedding 索引缓存至本地 SQLite/Vector 库。Copilot / Smart Composer： 如何利用上下文窗口（Context Window）构建提示词模板并实现流式输出（SSE）。实战配置：接入云端大模型 API（DeepSeek / OpenAI / Claude）。检查 .obsidian/plugins/ 下生成的本地向量数据结构，追踪分块与 Embedding 的生成逻辑。学习目标： 跑通端到端链路，并从代码逻辑层面理解插件是如何与 Obsidian API 进行交互的。第 4 章：全本地离线闭环——Ollama + 本地 Vector DB 部署本地模型选型与算力评估：Embedding 模型选型： bge-m3（多语言/长文本）、nomic-embed-text 等模型的量化与显存占用分析。LLM 推理引擎： 利用 Ollama / LM Studio 本地部署 Qwen2.5 或 DeepSeek-R1 蒸馏版（GGUF 格式）。  架构落地：配置本地服务暴露 OpenAI 兼容接口（http://localhost:11434/v1）。结合如 Analogy（基于本地 ChromaDB/Node.js 运行）或 Smart Connections 实现 100% 离线运行、零数据上云 的本地 RAG。学习目标： 建立一套不依赖任何外部付费 API 的私有安全 RAG 架构。第 5 章：Advanced RAG 进阶——混合检索与 Re-ranking纯向量检索（Dense Search）的局限： 无法精确匹配专有名词、特定代码函数名或英文缩写。混合检索（Hybrid Search）架构：Sparse Search (BM25/倒排索引) + Dense Search (Vector Embedding) 的融合算法（Reciprocal Rank Fusion, RRF）。引入重排序（Re-ranking）：配置 Cross-Encoder 模型（如 bge-reranker），对向量召回的 Top-K 结果进行二次打分，剔除无关上下文。学习目标： 解决传统 RAG 召回精度差、检索“似是而非”的痛点。第 6 章：突破语义局限——基于 Obsidian 双链的 GraphRAG向量 RAG 遇到的“瓶颈”： 无法回答全局概括性问题（如：“我的知识库里关于‘分布式系统’的所有核心观点是什么？”）。GraphRAG 原理：从 Markdown 提取实体（Entities）和关系（Relations），构建知识图谱。微软 GraphRAG 理念与轻量级 GraphRAG（如 LightRAG / Simple Graph Builder 插件）在 Obsidian 中的实现。图谱与双链融合： 将 Obsidian 的原生双链 [[Wikilinks]] 作为显式图边，结合向量隐式语义，实现多跳推理（Multi-hop Reasoning）。学习目标： 掌握 GraphRAG 理论与 Obsidian 双链的结合方式，提升 AI 处理复杂逻辑关联的能力。第 7 章：开发者扩展——基于 MCP (Model Context Protocol) 与外部生态联动打通 IDE 与知识库：什么是 MCP（模型上下文协议）？将 Obsidian 知识库作为 MCP Server 暴露给外部工具（如 Cursor、Claude Code、Windsurf）。自动化脚本开发（Python / Node.js）：利用 Python 编写文件监听脚本（watchdog），配合 LangChain / LlamaIndex 抓取 .md 文件修改，自动更新外部向量数据库（如 Qdrant / LanceDB）。学习目标： 让 Obsidian 不再只是一个孤立的笔记软件，而是成为你全工作流的上下文提供者。第 8 章：知识库评估、维护与 Agentic 工作流闭环RAG 效果评估机制：引入 RAGAS 评估框架的三个核心维度：忠实度（Faithfulness）、答案相关性（Answer Relevance）、上下文精准度（Context Precision）。知识库防衰退与垃圾回收： 解决增量更新中的向量漂移、冗余数据清理与碎片化笔记重构。Agentic 闭环工作流实战：交互链： 提出新课题 $\\rightarrow$ AI 检索本地历史笔记上下文 $\\rightarrow$ 生成结构化草稿 $\\rightarrow$ 自动在 Obsidian 中创建新笔记并写回双链和 Tag。学习目标： 实现知识从“输入 $\\rightarrow$ 检索 $\\rightarrow$ 辅助思考 $\\rightarrow$ 自动写回”的可持续演进闭环。",
+      "source_policy": "允许使用用户资料与公开官方资料",
+      "delivery": "Markdown + HTML",
+      "preferred_chapter_count": 9,
+      "effective_char_min": 10000,
+      "provider": "codex_gateway",
+      "model": "llm-gateway--deepseek-v4-pro",
+      "workflow_scope": "new_course"
+    },
+    "global_change_requests": [
+      {
+        "step": "mission",
+        "request": "增加一个章节，主要讲基于 Obsidian 的 3D 进阶效果。\nObsidian 的 3D 效果主要通过社区插件实现，最核心的功能是 3D 关系图谱（3D Graph），它能将原本平面的笔记网络转化为立体、可旋转的动态三维空间。"
+      },
+      {
+        "step": "mission",
+        "request": "增加一个章节，主要讲基于 Obsidian 的 3D 进阶效果。\nObsidian 的 3D 效果主要通过社区插件实现，最核心的功能是 3D 关系图谱（3D Graph），它能将原本平面的笔记网络转化为立体、可旋转的动态三维空间。"
+      },
+      {
+        "step": "generation",
+        "request": "完成8-9章在质检环节检测到的问题"
+      },
+      {
+        "step": "generation",
+        "request": "完成8-9章在质检环节检测到的问题"
+      }
+    ],
+    "workspace": {
+      "RESOURCES.md": "# 课程资源\n\n## 来源政策\n\n允许使用用户资料与公开官方资料\n\n## 检索范围与使用边界\n\n- Agent 会围绕课程核心概念、所用框架或工具的当前 API、相关标准或论文、项目实践与部署/安全边界检索资料。\n- 每一条资料都必须说明其支撑的教学内容；关键事实、API 用法和规范不得只依赖未核验的社区文章。\n- 资料是否可用以来源政策为准：只有政策允许时，才将社区教程作为补充阅读。\n\n## Agent 检索与核验\n\n任务定义确认后，Agent 会在这里写入检索计划、经筛选的资料和仍需人工补充的缺口。\n\n## 用户补充资源\n\n可在此登记链接、课程资料说明或上传附件的使用目的。\n\n- [Obsidian 中文帮助 ](https://obsidian.md/zh/help/)\n- [obsidian_tutorial](https://github.com/FDscend/obsidian_tutorial)\n- [obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book)\n- [obsidian指南](https://obsidian.vip/zh/documentation/)\n- [obsidian-3d-graph](https://github.com/Apoo711/obsidian-3d-graph)\n\n<!-- agent-research:start -->\n## 自动检索记录\n\n- 本轮来源政策：允许使用用户资料与公开官方资料。\n- 检索覆盖：核心概念、框架/API、标准或论文、项目实践，以及需要时的安全与部署边界。\n- 使用方式：资料仅支撑其对应的事实、API 或实践；未核验社区资料不能作为关键事实的唯一依据。\n\n### 本轮检索计划\n\n- 检索理由：围绕课程九章内容制定检索方向，优先获取官方文档、协议标准、学术论文及核心开源项目说明。'Obsidian plugin API developer documentation'支撑第3章插件架构拆解，定位官方API与社区开发规范；'Markdown AST chunking strategy for RAG vectors'服务于第2章AST解析与分块，查找论文与最佳实践，避免固定长度切分缺陷；'Microsoft GraphRAG research paper and LightRAG implementation'对应第6章GraphRAG原理，需获取原始论文与轻量级实现文档；'Ollama OpenAI compatible endpoint local deployment embed models'覆盖第4章全本地部署，需Ollama文档与bge-m3等模型的官方说明；'Model Context Protocol MCP specification Anthropic'面向第8章MCP集成，必须基于Anthropic发布的协议标准；'RAGAS evaluation framework faithfulness answer relevance context precision'为第9章评估框架提供官方指标定义与使用指南；'Obsidian 3D graph plugin GitHub Apoo711'直接支撑新增的第7章3D关系图谱，指向核心社区插件的维护教程与配置说明。\n- 检索词：`Obsidian plugin API developer documentation`\n- 检索词：`Markdown AST chunking strategy for RAG vectors`\n- 检索词：`Microsoft GraphRAG research paper and LightRAG implementation`\n- 检索词：`Ollama OpenAI compatible endpoint local deployment embed models`\n- 检索词：`Model Context Protocol MCP specification Anthropic`\n- 检索词：`RAGAS evaluation framework faithfulness answer relevance context precision`\n- 检索词：`Obsidian 3D graph plugin GitHub Apoo711`\n\n### 已核验可用资料\n\n- [Home - Developer Documentation](https://docs.obsidian.md/Home)（official）：Official Obsidian plugin developer documentation home, covering API basics, lifecycle, and core concepts to support plugin development practice.\n- [Plugin - Developer Documentation](https://docs.obsidian.md/Reference/TypeScript+API/Plugin)（official）：Detailed Plugin class API reference defining load, save, unload hooks and metadata; essential for implementing custom plugins.\n- [GitHub - asukhodko/chunkana: A multi-strategy Markdown chunking library ...](https://github.com/asukhodko/chunkana)（community）：Multi-strategy Markdown chunking library using AST parsing, supporting header, paragraph, and token splitting for preparing RAG vectors.\n- [Enhance RAG performance through intelligent chunking strategies](https://developer.ibm.com/articles/awb-enhancing-rag-performance-chunking-strategies/)（community）：IBM article explaining intelligent chunking methods including structure-aware splitting of Markdown, improving retrieval relevance for RAG.\n- [Project GraphRAG - Microsoft Research](https://www.microsoft.com/en-us/research/project/graphrag/)（official）：Microsoft Research project page for GraphRAG, linking to the research paper and overview, supporting graph-based RAG understanding.\n- [GitHub - microsoft/graphrag: A modular graph-based Retrieval-Augmented ...](https://github.com/microsoft/graphrag)（official）：Official GraphRAG implementation, a modular library for building graph indices for retrieval-augmented generation, directly usable in course labs.\n- [OpenAI compatibility - Ollama](https://docs.ollama.com/api/openai-compatibility)（official）：Ollama documentation for OpenAI-compatible endpoint, enabling local embedding model calls and chat completions in the course local deployment module.\n- [Specification - Model Context Protocol](https://modelcontextprotocol.io/specification/2025-06-18)（standard）：MCP specification defining client-server interaction, resources, prompts, and tools; foundational standard for integrating LLMs with external tools.\n- [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol/modelcontextprotocol)（standard）：Official MCP repository containing the protocol specification and reference implementations, supporting practical understanding and integration.\n\n### 检索备注\n\n- Missing resources for LightRAG implementation: search results provided only GraphRAG items; no LightRAG repository or paper found.\n- Missing resources for RAGAS evaluation framework (faithfulness, answer relevance, context precision): no results returned for the query.\n- Missing resources for Obsidian 3D graph plugin by Apoo711: no results returned for the query.\n\n<!-- agent-research:end -->\n",
+      "COURSE-GENERATION-SPEC.md": "# 课程生成规格\n\n- 交付格式：Markdown + HTML\n- 期望章节数：9（以课程蓝图为准）\n- 单章有效字符数下限：10000\n- 运行模式：本地单用户、引导模式\n- 质量门：逐章 Humanizer、构建、确定性检查、语义审校、人工确认\n- 自动返工上限：同类问题连续三轮后转人工\n",
+      "NOTES.md": "# 课程迭代笔记\n\n本课程由课程生成 Agent 创建，当前处于引导模式。\n\n- 根据用户反馈，新增第7章“Obsidian 3D 视觉化——关系图谱与进阶效果”，介绍基于社区插件的3D关系图谱实现，相应调整章节总数及顺序。\n"
+    }
+  },
+  "module_context": {
+    "title": "工程集成——MCP 扩展与闭环进化",
+    "goal": "将 Obsidian 从孤岛锻造为全工作流上下文中心，并通过评估与 Agentic 工作流实现知识库的自我进化。",
+    "narrative": "知识库的终极形态，是成为你所有工具的「大脑」。通过 MCP 协议，让 Cursor、Claude Code 等开发环境直接读取你的笔记上下文；再用 Python 脚本和 LangChain/LlamaIndex 打通外部向量库。最后，建立 RAGAS 评估体系，防止知识退化，并搭建「提问 → 检索 → 生成 → 自动写回」的 Agentic 闭环，让知识库在你睡觉时也能成长。",
+    "chapter_sequence": [
+      {
+        "number": 8,
+        "title": "开发者扩展——基于 MCP 与外部生态联动",
+        "learning_outcome": "能够解释 MCP 协议并搭建简单的 Obsidian MCP Server，将其集成到 Cursor/Windsurf 等 IDE 中；并能用 Python 脚本监控 Markdown 变动，自动更新外部向量数据库。"
+      },
+      {
+        "number": 9,
+        "title": "知识库评估、维护与 Agentic 工作流闭环",
+        "learning_outcome": "能够应用 RAGAS 框架评估 RAG 质量，制定知识库防衰退与垃圾回收策略，并实现「提出课题 → 检索 → 生成草稿 → 自动写回笔记及双链/Tag」的 Agentic 闭环。"
+      }
+    ]
+  },
+  "chapter": {
+    "number": 9,
+    "title": "知识库评估、维护与 Agentic 工作流闭环",
+    "learning_outcome": "能够应用 RAGAS 框架评估 RAG 质量，制定知识库防衰退与垃圾回收策略，并实现「提出课题 → 检索 → 生成草稿 → 自动写回笔记及双链/Tag」的 Agentic 闭环。",
+    "prerequisites": [
+      "已完成完整的本地 RAG 与检索系统（第4、5、6章）",
+      "理解 MCP 与自动化脚本（第8章）"
+    ],
+    "continuity_in": [
+      "前8章积累的笔记数据、检索管线与 MCP 工具为闭环提供全链路组件"
+    ],
+    "continuity_out": [
+      "标志着整个课程的集成终点，学习者的知识库从此进入自演进状态"
+    ],
+    "pedagogy_type": "integrated_practice",
+    "primary_teaching_task": "综合实战：从评估到自动进化流水线",
+    "instructor_voice": "卓越运营顾问，强调「建好只是开始，持续进化才是关键」",
+    "learning_path": [
+      "RAG 质量评估：RAGAS 框架（忠实度、答案相关性、上下文精准度）",
+      "实验：生成评估集，运行 RAGAS 并分析得分",
+      "知识库健康诊断：向量漂移、碎片化与冗余笔记",
+      "防衰退策略：增量重索引、孤儿笔记清理、语义聚类",
+      "Agentic 闭环设计：提问 → 检索 → LLM 生成 → 解析 → 创建/更新笔记",
+      "动手构建：Python 脚本实现闭环（LangChain Agent 或自定义流水线）",
+      "演示：提出「分布式系统共识算法综述」，系统自动生成并链接结构化笔记",
+      "课程总结：你已建成一个可演进、可扩展的个人 AI 知识库"
+    ],
+    "template_modules": [
+      "评估框架讲解",
+      "RAGAS 实操实验",
+      "维护清单与脚本",
+      "Agent 构建分步指南",
+      "闭环演示",
+      "课程总结与未来展望"
+    ]
+  },
+  "neighbor_context": {
+    "previous": {
+      "number": 8,
+      "title": "开发者扩展——基于 MCP 与外部生态联动",
+      "learning_outcome": "能够解释 MCP 协议并搭建简单的 Obsidian MCP Server，将其集成到 Cursor/Windsurf 等 IDE 中；并能用 Python 脚本监控 Markdown 变动，自动更新外部向量数据库。",
+      "prerequisites": [
+        "具备 Obsidian 深度使用经验（前7章）",
+        "了解基本的 API 概念"
+      ],
+      "continuity_in": [
+        "第6、7章的结构化知识图谱为 MCP 提供了可暴露的高质量信息",
+        "第4章的本地 API 经验可迁移到 MCP Server 构建"
+      ],
+      "continuity_out": [
+        "为第9章的 Agentic 闭环提供工具链基础（外部可读取、可写入）"
+      ],
+      "pedagogy_type": "framework",
+      "primary_teaching_task": "MCP 协议落地与自动化脚本开发",
+      "instructor_voice": "集成架构师视角，强调「万物互联」的工作流哲学",
+      "learning_path": [
+        "MCP 协议入门：Client-Server 模型、Resources、Prompts、Tools",
+        "搭建 Obsidian MCP Server：暴露笔记查询和图谱检索功能",
+        "集成 IDE：在 Cursor/Claude Code 中连接知识库上下文",
+        "自动化脚本设计：Python watchdog 监听 .md 更改",
+        "对接外部向量 DB：使用 LangChain/LlamaIndex 写入 Qdrant/LanceDB",
+        "测试端到端：在 IDE 中提问，答案自动引用笔记原文",
+        "安全与边界：只读模式、敏感目录过滤"
+      ],
+      "template_modules": [
+        "协议规范精义",
+        "MCP Server 代码模板",
+        "IDE 集成演示",
+        "Python 脚本步骤",
+        "安全检查清单"
+      ]
+    },
+    "next": null
+  },
+  "continuity_ledger": [
+    {
+      "chapter": 6,
+      "module": "知识关联——图谱与可视化",
+      "summary": "第六章从“为什么向量检索无法回答全局性问题”出发，引出GraphRAG通过知识图谱构建结构化表征的必要性。介绍了实体、关系、图拓扑等概念，并借助手工三元组实验对比了向量检索与图谱遍历的差异。详细拆解了微软GraphRAG的社区摘要与全局/局部检索架构，以及轻量级替代LightRAG的本地部署方案。重点分析了Obsidian双链作为用户手工标注的显式图边，可与LLM抽取的隐式关系合并，实现确定性与覆盖率的互补。通过Simple Graph Builder插件和LightRAG本地索引，完成了图谱可视化与多跳查询实践。章末确立了图检索与向量检索互补的结论，并给出验证实验，为后续3D图谱和大模型接口提供结构化图谱数据与推理能力基础。",
+      "established_terms": [
+        "GraphRAG：在RAG管道中引入知识图谱的方法，通过LLM抽取实体与关系构建图索引，支持全局概括和多跳推理，弥补纯向量检索的结构缺失。",
+        "知识图谱：由实体节点和类型化关系边构成的有向图，用三元组(head, relation, tail)表示概念间的从属、因果等关联，使信息检索从“相似”升级为“关系”。",
+        "实体与关系抽取：使用LLM从文本中识别关键实体及其关系，输出结构化三元组。常见陷阱包括实体解析、关系粒度控制和抽取质量校验。",
+        "双链(wikilinks)：Obsidian中`[[笔记名]]`语法，用户手动创建的笔记间链接，在图谱中构成显式有向边，是零成本的高质量关系来源。",
+        "社区摘要(Community Summarization)：微软GraphRAG使用Leiden算法对实体图聚类，再让LLM为每个社区生成概括摘要，用于全局查询而不必实时遍历全图。",
+        "LightRAG：轻量级GraphRAG实现，无独立社区摘要层，依靠低、中、高三档检索模式扩大图遍历范围，适合个人知识库在本地7B模型下运行。",
+        "多跳推理：在知识图谱中沿关系边进行多步遍历，连接无直接字面关联的概念，如“Paxos→替代方案→RAFT”，支持需要关系路径的查询。",
+        "Simple Graph Builder：Obsidian社区插件，扫描标签与关键词共现构建交互式图谱，能发现未手动添加双链的隐式关联，直观显示知识结构空洞。"
+      ],
+      "established_facts": [
+        "向量检索基于相似性，难以回答“关于X的所有核心观点”等全局概括问题，会遗漏缺乏字面或语义锚点的孤立笔记。",
+        "知识图谱通过实体和关系显式建模概念间的从属、并列等语义关联，可从“分布式系统”出发经关系路径找到“时钟与顺序”，即使该笔记不含“分布式系统”字眼。",
+        "微软GraphRAG通过Leiden社区检测和社区摘要实现全局查询，无需实时遍历全图，但资源要求高；LightRAG省略独立社区摘要，用扩大图遍历的方式近似全局回答。",
+        "Obsidian的双链是用户手工标注的图边，准确且零成本；LLM自动抽取可发现文本中的隐式关系。两者合并（双链边标为wikilink，抽取边使用原标签）可提升图谱覆盖度。",
+        "图检索与向量检索互补：事实性精确查询适合向量检索，关系推理、全局概括和多跳查询适合图检索，最佳实践是双管道并行并将各自上下文合并后交由LLM生成。",
+        "LightRAG支持本地7B模型完成实体抽取与查询，通过mode参数切换local（实体邻居）和global（扩大遍历）模式，全局模式能从更广的图结构中召回字面不匹配但相关的笔记。",
+        "Simple Graph Builder在Obsidian内构建交互式图谱，可直观展示中心节点、孤立笔记和主题簇，帮助发现知识库中的结构缺失和跨界灵感。",
+        "本章通过LightRAG实验验证了全局模式能够发现纯向量检索遗漏的时钟同步概念，证明图拓扑可弥补语义锚点缺失的问题。"
+      ],
+      "open_loops": [
+        "实体解析的自动化未实现：同一实体不同名称（如Lamport/L. Lamport）如何合并仅提及思路，未给出本地可操作的解决方案。",
+        "LightRAG全局模式的召回精度是否稳定：缺少社区摘要层，仅靠扩大图遍历可能引入噪声，且未与微软方案做量化对比。",
+        "本地7B模型做实体抽取的能力不足：章末建议可换用14b模型或云端测试，但未明确在个人笔记规模下的实用性优化路径。",
+        "双链边与LLM抽取边的融合尚未提供代码实现或具体流程，读者尚未获得统一查询这两种边的方法。",
+        "图索引的动态更新未解决：新笔记重建索引的耗时导致图检索时效性落后，增量更新机制只字未提。",
+        "全局统计类查询（如最常见概念排行）在LightRAG中无法完成，仅指出其局限而未提出与文本统计相结合的弥补方案。",
+        "多跳推理的最优遍历深度未讨论：实验限于两跳，更多跳数可能造成上下文膨胀和延迟，查询规划策略缺席。",
+        "与第5章混合检索管道的实际合并架构未落地：读者尚未获得一个将图检索结果与向量检索片段合并的统一流水线示例。"
+      ],
+      "bridge_to_next": [
+        "第六章构建的图谱数据（LightRAG图索引、Simple Graph Builder图结构、笔记间双链关系）可直接作为第7章3D图谱的节点和边素材。",
+        "双链作为显式图边、LLM抽取关系作为隐式边的分类，为第7章在三维空间中区分不同类型的连线（如wikilink、概念关系）提供数据基础。",
+        "Simple Graph Builder揭示的结构空洞和主题簇，可在3D图谱中更直观地呈现，使结构发现和知识整理目标在立体空间中一目了然。",
+        "已生成的共现关键词/标签图谱数据（Simple Graph Builder输出）可作为3D图谱插件的导入格式，支撑第7章的实操环节。",
+        "实体与关系的结构化存储（如NetworkX图或LightRAG索引）为第8章MCP接口对外暴露知识图谱数据提供了可访问的数据源。",
+        "第六章确立的图检索与向量检索互补思路，第7章的3D可视化可作为整体管道的视觉监控界面，展示两条检索路径的覆盖情况。",
+        "章末实验要求学生识别中心节点、孤立笔记、代码笔记等类型，这些节点属性可转化为3D图谱中的视觉标记，强化分析维度。",
+        "提出的“合成边”概念（双链+LLM推断的间接连接）为第7章展示融合后的完整知识网络提供了理论依据和待展示的数据结构。"
+      ]
+    },
+    {
+      "chapter": 7,
+      "module": "知识关联——图谱与可视化",
+      "summary": "本章学习在 Obsidian 中安装并配置 3D Graph 插件（基于 Three.js、WebGL），将双链知识图谱渲染为可交互的三维空间。从确认前置条件（≥10 篇含双链的笔记）、插件安装、打开 3D 视图，到掌握旋转、缩放、拖拽、点选等交互动作。通过 Color Groups 按路径或标签为笔记群落着色，实现文件夹级可视化。详细说明力导向布局参数（Link Distance、Charge Force、Center Strength 等）及其调优，并提示常见陷阱。在学习者完成“星桥发现”“知识缺口定位”“孤立笔记吸附”三个探索任务后，简述渲染原理：邻接表经力导向算法迭代求解三维坐标。最后提供排错指南、验收记录和自测，使平面图谱升级为立体的知识宇宙。",
+      "established_terms": [
+        "3D Graph 插件：Apoo711 开发的 Obsidian 社区插件，利用 Three.js 和 WebGL 将关系图谱渲染为可交互的三维场景。",
+        "力导向布局：在三维空间中计算弹簧吸引力、库仑斥力和可选中心拉力，迭代确定节点位置的算法。",
+        "Color Groups：插件设置中按 Query（搜索语法）为节点分配颜色的规则组，从上到下匹配。",
+        "Query 语法：支持 path:、tag:、file: 等 Obsidian 搜索语法，用于定义颜色分组或过滤。",
+        "Link Distance：力导向参数，控制有双链节点之间的理想间距。",
+        "Charge Force：力导向参数，设置节点间排斥力（负值），绝对值越大节点越分散。",
+        "Three.js：底层 3D 渲染库，通过 WebGL 在 GPU 上绘制球体和线条。",
+        "桥梁笔记：同时连接多个不同颜色群落的节点，可用 3D 图谱旋转发现。"
+      ],
+      "established_facts": [
+        "3D Graph 插件图标为 Ribbon 区立方体，启用后在命令面板可调用 Open 3D Graph。",
+        "3D 图谱不会取代 2D 图谱，前者用于宏观探索和灵感发现，后者适合精准查找链接。",
+        "鼠标左键拖拽旋转视角，滚轮缩放，右键平移；双击节点直接打开对应笔记。",
+        "颜色分组按 Query 从上到下匹配，具体规则应置于宽泛规则之前。",
+        "Link Distance 过小会导致节点挤作一团，Charge Force 设为正值会使节点相吸坍缩。",
+        "力导向算法通过弹簧吸引、库仑斥力、中心拉力迭代求解节点三维坐标，达到稳定。",
+        "将 Link Strength 设为 0、Charge Force 设为 -2000 可观察纯粹斥力下的节点弹射现象。",
+        "3D 图谱节点颜色和背景受 Obsidian 主题变量 --background-primary 和 --text-normal 影响。"
+      ],
+      "open_loops": [],
+      "bridge_to_next": [
+        "学习者已能通过旋转、缩放、着色探索 3D 图谱，发现星桥与知识缺口，为第 8 章通过 MCP 暴露知识库提供了可交互的三维可视化场景。",
+        "3D 图谱中的节点、连线、群落结构成为外部工具访问知识图谱时的视觉反馈基础，衔接第 8 章的 MCP 暴露。"
+      ]
+    },
+    {
+      "chapter": 8,
+      "module": "工程集成——MCP 扩展与闭环进化",
+      "summary": "第8章解决知识库无法与外部工具对话的问题，通过MCP协议（Model Context Protocol）将Obsidian知识库变为可响应外部请求的服务。首先解释MCP统一Client-Server规范，定义Resources（可读数据）、Tools（可执行操作）和Prompts（提示模板）三类抽象，解决集成N×M问题。其次，指导用Python搭建基于stdio的Obsidian MCP Server，实现笔记列表、读取和全文搜索功能，并突出路径遍历防护。接着，演示在Cursor和Claude Code中配置MCP连接，使IDE能够引用笔记内容。然后，编写watchdog监听脚本，通过防抖机制监听.md文件变动，自动分块、调用Ollama embedding并写入LanceDB向量数据库，实现知识库到外部向量库的同步。最后强调只读优先的安全边界和stdio的隐私优势。本章构建了知识库的输出层，为后续Agentic闭环提供工具链基础。",
+      "established_terms": [
+        "MCP（Model Context Protocol）：Anthropic开源的统一Client-Server通信协议，定义Resources、Tools、Prompts三类抽象，通过stdio或HTTP传输，将知识库暴露为服务。本章使用stdio传输。",
+        "Resources：MCP中Client可主动拉取的只读数据实体，如笔记列表、正文、图谱邻接信息。本章Server将其映射为obsidian://notes/ URI。",
+        "Tools：MCP中暴露的可执行操作，Client发送请求并接收结果。本章实现search_notes工具，支持全文搜索笔记。",
+        "Prompts：MCP中暴露的预置提示词模板，Client可拉取并参数化。本章未手动实现，但可作为后续扩展。",
+        "stdio传输：MCP Server通过标准输入/输出流与作为子进程的客户端通信，无网络监听，一对一连接，天然隔离第三方访问。",
+        "子进程：一个程序启动另一个程序作为子进程，父进程可读写子进程的stdin/stdout。MCP Client将Server作为子进程运行。",
+        "防抖：文件监听中等待文件变动停止一段时间（如2秒）后再执行同步操作，合并连续修改，避免频繁重复向量化和写入。",
+        "LanceDB：纯嵌入式列式向量数据库，零服务进程，数据存储为本地目录，适合个人知识库规模，查询性能优于Chroma。"
+      ],
+      "established_facts": [
+        "MCP协议将外部工具访问知识库的M×N适配复杂度降为N+M，只需一个Server即可服务所有MCP兼容的Client。",
+        "本章实现的Obsidian MCP Server基于Python，使用mcp库与stdio传输，暴露笔记列表、读取和search_notes工具，不依赖网络。",
+        "Server中handle_read_resource通过is_relative_to()强制检查URI路径不跳出VAULT_PATH，防止../../../etc/passwd等路径遍历攻击。",
+        "sync_vector.py使用watchdog监听Obsidian vault中.md文件的创建、修改和删除，防抖2秒后按段落分块，调用Ollama nomic-embed-text生成向量，写入LanceDB。",
+        "选择LanceDB而非Chroma或Qdrant的原因：纯嵌入式、零服务、列式存储、适合数千条笔记的本地场景，无需运维独立服务。",
+        "同步脚本采用段落切分（按\\n\\n分割）而非AST递归切分，以保证在Markdown结构不完整时的鲁棒性和处理速度。",
+        "Cursor和Claude Code的MCP集成通过配置启动命令和参数完成，启动后自动完成initialize握手，AI可使用工具搜索并引用笔记。",
+        "整个MCP Server目前只读，未暴露创建/删除笔记的工具，避免误操作或攻击；同步脚本独立运行，与Server解耦。"
+      ],
+      "open_loops": [
+        "Agentic自动写回笔记能力（创建、更新、删除笔记及双链）尚未实现，仅预留为第9章内容。",
+        "MCP的HTTP传输模式（多客户端并发、远程访问）在本章未展开，目前仅使用stdio一对一连接。",
+        "生产级权限控制与数据加密未实现，仅依赖stdio进程隔离和路径检查，未讨论多用户鉴权。",
+        "search_notes函数使用最朴素的小写全文匹配，不支持Obsidian搜索语法（如tag:、file:）或词边界，大型vault性能低。",
+        "自动化同步脚本在Ollama服务未启动时仅记录警告，积压文件缓冲区缺乏持久化及错误恢复机制。",
+        "向量数据库从LanceDB迁移到Qdrant的生产级路径和并发查询能力未被详细讨论。",
+        "Prompts抽象的具体实现和动态模板填充（利用Resources结果自动生成上下文）未在本章落地。",
+        "超长笔记（>10000字）的分块与防抖延迟优化仅为建议，未给出自适应策略。"
+      ],
+      "bridge_to_next": [
+        "第9章Agentic闭环需扩展MCP Server，增加用于创建/更新笔记和自动添加双链的Tool定义，突破当前只读限制。",
+        "需借鉴当前路径遍历防护，在写操作中加入写入目录白名单、内容沙箱或人工确认等安全控制。",
+        "sync_vector.py的增量同步机制（防抖+分块+向量化）可直接承接Agentic写入后的自动索引，但需处理批量写入的重新分块逻辑。",
+        "第9章可复用本章的MCP通信链路和initialize握手模式，将新工具无缝接入Cursor/Claude Code上下文。",
+        "本章建立的知识库输出层（MCP读+同步写库）为闭环提供可依赖的数据基础，Agentic任务可直接查询最新向量化知识。",
+        "需解决自动写回时的冲突与重复问题，例如同一主题多Agent同时写入可能产生重复笔记，需要合并策略。",
+        "本章未实现的Prompts模板可成为Agentic闭环中引导LLM按特定结构生成笔记的起点。",
+        "第9章应设计“从提问到写回新笔记及双链”的完整流水线，衔接前文图谱结构，实现知识库的自生长。"
+      ]
+    }
+  ],
+  "feedback": ""
+}

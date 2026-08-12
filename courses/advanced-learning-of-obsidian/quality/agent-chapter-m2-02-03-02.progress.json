@@ -1,0 +1,21 @@
+{
+  "body_generated": true,
+  "pending_stage": "completed",
+  "path": "lessons/02-rag-markdown-ast.md",
+  "effective_chars": 10486,
+  "humanizer_score": 47,
+  "semantic_review": {
+    "score": 94,
+    "decision": "reject",
+    "issues": [
+      "[blocker] 操作快捷键错误 | 证据：『按 `Ctrl/Cmd + Shift + L` 打开**标签面板**』 | 建议：Obsidian 标签面板默认快捷键为 `Ctrl/Cmd + Shift + T`，`Ctrl/Cmd + Shift + L` 为切换左侧边栏，初学者会因无法打开面板而卡住。"
+    ],
+    "strengths": [
+      "原子化笔记与向量纯度思想实验直观，用简化二维向量和余弦相似度展示混合笔记降低检索精度，让抽象概念可感。",
+      "AST 分块代码逐行讲解，从基础语法速览到构建标题递归切分器，配合输入输出对比，降低实践门槛。",
+      "父子文档检索流程用具体步骤演示从小块命中到父文档补全，清晰阐明 Small-to-Big 的补全逻辑。",
+      "练习设计层次分明，从预测题、动手操作到修改代码，并给出参考答案，有效巩固理论与实践。",
+      "已忽略 1 条无法在原文定位的审校结论。"
+    ]
+  }
+}

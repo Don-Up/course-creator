@@ -1,0 +1,39 @@
+[project]
+name = "ai-course-agent-api"
+version = "0.1.0"
+description = "Local-first course generation agent for AI Course Studio"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi==0.139.2",
+  "httpx==0.28.1",
+  "langchain==1.3.14",
+  "langchain-deepseek==1.1.0",
+  "langgraph==1.2.9",
+  "langgraph-checkpoint-sqlite==3.1.0",
+  "pydantic==2.13.4",
+  "pydantic-settings==2.13.1",
+  "uvicorn[standard]==0.41.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.2",
+  "ruff==0.12.11",
+]
+
+[project.scripts]
+course-agent-api = "app.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 92
+target-version = "py312"

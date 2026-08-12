@@ -1,0 +1,1 @@
+"""AI Course Agent API."""

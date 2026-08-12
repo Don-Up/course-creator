@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="你将在 Obsidian 中通过 3D Graph 插件，把第 6 章构建的双链知识图谱变成一个可旋转、缩放、点选的三维空间，并学会用立体视角发现笔记群落、隐藏关联和知识缺口。"><title>Obsidian 3D 视觉化——关系图谱与进阶效果 | 从零开始，学会搭建一个酷炫的 Obsidian 个人知识库</title><script src="../assets/theme-switcher.js?v=msh7ie2o"></script><link rel="stylesheet" href="../assets/course.css?v=msh7ie2o"><script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script><script defer src="../assets/course.js?v=msh7ie2o"></script><script defer src="../assets/reading-progress.js?v=msh7ie2o"></script></head>
+<body data-course-slug="advanced-learning-of-obsidian"><div class="course-shell"><div class="lesson-page-grid"><aside class="chapter-nav" aria-label="课程章节导航"><button class="chapter-nav-toggle" type="button" aria-expanded="true" aria-controls="chapter-nav-content"><span aria-hidden="true">◀</span><span class="chapter-nav-toggle-label">收起</span></button><div class="chapter-nav-content" id="chapter-nav-content"><div class="chapter-nav-heading"><strong>课程章节</strong><span>第 7 / 9 章</span></div><nav class="chapter-nav-list"><section class="chapter-nav-module"><h2>认知基础——知识管理与RAG哲学</h2><a href="../lessons/01-rag.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">个人知识库选型与 RAG 演进哲学</span></a></section>
+<section class="chapter-nav-module"><h2>数据基石——结构化笔记与插件引擎</h2><a href="../lessons/02-rag-markdown-ast.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">面向 RAG 的 Markdown 数据建模与 AST 解析</span></a><a href="../lessons/03-api.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">插件架构拆解与云端 API 快速落地</span></a></section>
+<section class="chapter-nav-module"><h2>本地智能——离线 RAG 与高级检索</h2><a href="../lessons/04-ollama-vector-db.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">全本地离线闭环——Ollama + 本地 Vector DB 部署</span></a><a href="../lessons/05-advanced-rag-re-ranking.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">Advanced RAG 进阶——混合检索与 Re-ranking</span></a></section>
+<section class="chapter-nav-module"><h2>知识关联——图谱与可视化</h2><a href="../lessons/06-obsidian-graphrag.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">突破语义局限——基于 Obsidian 双链的 GraphRAG</span></a><a href="../lessons/07-obsidian-3d.html" class="is-current" aria-current="page"><span class="chapter-nav-code"></span><span class="chapter-nav-title">Obsidian 3D 视觉化——关系图谱与进阶效果</span></a></section>
+<section class="chapter-nav-module"><h2>工程集成——MCP 扩展与闭环进化</h2><a href="../lessons/08-mcp.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">开发者扩展——基于 MCP 与外部生态联动</span></a><a href="../lessons/09-agentic.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">知识库评估、维护与 Agentic 工作流闭环</span></a></section></nav></div></aside><div class="lesson-page-main"><header class="topbar"><a class="brand" href="../index.html">从零开始，学会搭建一个酷炫的 Obsidian 个人知识库</a><nav><a href="../index.html">课程目录</a><a href="../reference/glossary.html">术语表</a></nav></header><section class="lesson-header"><div class="eyebrow">第 7 章 · 约 60–90 分钟（含安装、配置与自由探索）</div><h1>Obsidian 3D 视觉化——关系图谱与进阶效果</h1><p class="lesson-summary">你将在 Obsidian 中通过 3D Graph 插件，把第 6 章构建的双链知识图谱变成一个可旋转、缩放、点选的三维空间，并学会用立体视角发现笔记群落、隐藏关联和知识缺口。</p><a class="source-link" href="../markdown/07-obsidian-3d.md">查看 Markdown 版本</a></section><div class="lesson-layout"><main class="lesson-content"><h2 id="把平面图谱变成立体世界-你能看到什么">把平面图谱变成立体世界——你能看到什么？</h2>
+<p>先看对比：左边是 Obsidian 默认的平面关系图谱，笔记散落，连线像密集的地铁图，主次难辨。右边是安装 3D 插件后的效果：同一批笔记被投射到可旋转的三维空间，笔记聚成星团，孤立节点漂在边缘。转动视角时，一条平面中被遮挡的连线可能从深处浮现，连接起原本无关的两篇笔记。</p>
+<blockquote><p>图示说明：2Dvs3D（外部图像地址见本章参考文献）</p></blockquote>
+<p>本章结束后，你可以对着笔记本的 3D 图谱完成三件事：</p>
+<ol><li>用鼠标或触控板旋转、缩放、拖拽，像探索微型宇宙一样在笔记节点间漫游。</li><li>通过为不同文件夹、标签或笔记群设置颜色，立刻区分“技术笔记”“读书笔记”“项目笔记”等知识群落。</li><li>锁定一个“桥梁节点”——它连接了两个在平面图谱中似乎毫不相关的主题群落，你双击它，直接在 Obsidian 中打开这篇笔记，完成一次关于知识关联的创意发现。</li></ol>
+<p>完成这三件事，Obsidian 就多了一个立体的知识探索视图。下面我们一步步安装插件。</p>
+<h2 id="我们需要什么工具-先认识一下两个新面孔">我们需要什么工具？先认识一下两个新面孔</h2>
+<p>要让平面图谱站起来，需要两个角色的协作：</p>
+<ul><li><strong>Obsidian 2D Graph</strong>：你已经在用的 Obsidian 内置视图。它用 Canvas 或 SVG 渲染节点和连线，支持拖拽和搜索，但永远只在 XY 平面上排布。把它看作知识网络的“建筑蓝图”——精确、可编辑，但缺少高度和深度。</li><li><strong>3D Graph 插件</strong>：我们本章安装的核心。它基于 WebGL 图形库在 GPU 上高速渲染三维场景，把相同的关系图谱投射到立体空间，增加 Z 轴。你可以把它理解为在蓝图基础上，用乐高搭出了大楼的实体模型——绕着走可以看到不同侧面，甚至能发现设计时没预料到的空间联系。</li></ul>
+<p>3D 图谱不会取代 2D 图谱。工作规划、快速查找链接时用 2D 界面更高效；当你想停下日常写作、换个角度审视知识库结构、寻找创意关联时，切入 3D 视图。<strong>前者是放大镜，后者是望远镜</strong>。</p>
+<h3 id="最小前置-确认你的知识库可以生成-3d-图谱">最小前置：确认你的知识库可以生成 3D 图谱</h3>
+<p>本章的动手环节直接依赖你已有的笔记库。下列四项如果有一项不满足，请先花 5 分钟完成补救再继续，否则 3D 图谱打开后可能只剩一个光秃秃的黑色空间。</p>
+<ol><li>你有至少 10 篇笔记，并且彼此之间存在 <code>[[双向链接]]</code>。  </li></ol>
+<p><strong>自检方式</strong>：按 <code>Ctrl/Cmd + G</code> 打开 Obsidian 内置的关系图谱（Graph View），确认能看到成团的节点和相互交织的连线。如果图谱里只有几个孤立的圆点，说明双链还不够丰富。</p>
+<ol><li>你能够流畅地在 Obsidian 中新建笔记、在正文中键入 <code>[[</code> 并选择另一篇笔记，从而创建一条链接。第 6 章已经详细练习过，如果还不熟练，现在就新建一个空白笔记，键入 <code>[[GraphRAG 原理]]</code> 试试看。</li></ol>
+<ol><li>你理解 Obsidian 社区插件的基本安装流程：进入 Settings → Community plugins → Browse，搜索插件名，点击 Install，然后 Enable。如果你在第 4 章已经安装并启用了 Smart Connections，这一套操作对你来说轻车熟路。</li></ol>
+<ol><li>你的笔记库没有因为过于庞大而在 2D 图谱中已经卡顿（例如超过 3000 篇同时展示）。3D 图谱基于 GPU，但也建议用过滤功能控制显示范围。如果你此刻的 2D 图谱已经卡到无法操作，先在 Graph View 的过滤器里隐藏部分文件夹，再去安装 3D 插件。</li></ol>
+<p><strong>如果第 1 项不通过：快速播种一批双链笔记</strong> 在 Obsidian 中创建一个临时文件夹 <code>3D-seeds</code>，按顺序新建下面 6 篇笔记，并在正文中按提示键入双链。每篇笔记只写一两句话，重点是建立链接。完成后打开 Graph View 确认链接出现。</p>
+<ul><li><code>人工智能.md</code>：正文写“人工智能是一个宏大领域”，并键入 <code>[[机器学习]]</code>、<code>[[深度学习]]</code>。</li><li><code>机器学习.md</code>：正文写“机器学习是实现人工智能的主要方法”，键入 <code>[[人工智能]]</code>、<code>[[监督学习]]</code>。</li><li><code>深度学习.md</code>：正文写“深度学习是机器学习的一个分支”，键入 <code>[[机器学习]]</code>、<code>[[神经网络]]</code>。</li><li><code>监督学习.md</code>：正文写“监督学习需要标注数据”，键入 <code>[[机器学习]]</code>。</li><li><code>神经网络.md</code>：正文写“神经网络受生物大脑启发”，键入 <code>[[深度学习]]</code>。</li><li><code>项目-笔记系统.md</code>：正文写“用知识图谱管理学习笔记”，键入 <code>[[人工智能]]</code>、<code>[[机器学习]]</code>（交叉连接不同主题，形成桥梁）。</li></ul>
+<p>这份种子库会在你的 3D 图谱中形成一组可辨识的技术类节点群，以及一条通往项目的连线。后续你可以随时删除这个文件夹。</p>
+<h2 id="安装前的-5-秒核验">安装前的 5 秒核验</h2>
+<p>正式下载插件前，先确认你的起点满足要求。打开 Obsidian 的“关于”面板（<code>Settings → General → About</code>），核对以下三项：</p>
+<ul><li><strong>Obsidian 版本 ≥ 1.5.0</strong>：3D 插件依赖该版本引入的较新的渲染支持。版本号低于此的，先到 Obsidian 官网（见本章参考文献） 下载最新安装包覆盖安装。</li><li><strong>已开启社区插件模式</strong>：在 <code>Settings → Community plugins</code> 中确认“Safe mode”处于关闭状态。如果提示安全模式保护，点“Turn off Safe Mode”即可。</li><li><strong>关系图谱已有可见节点与连线</strong>：先按 <code>Ctrl/Cmd + G</code> 打开 Graph View 确认可以看到笔记之间的连接；如果是完全空白的图谱，请先回到第 6 章建立至少 10 篇含双链的笔记节点。</li></ul>
+<p>如果三项全部绿灯，我们直接进入安装。<strong>注意</strong>：本章插件操作均在安全本地环境进行，数据不会上传到任何服务器；3D 图的数据来源仍是你电脑上的 <code>.md</code> 文件，插件只是提供新的渲染方式。</p>
+<h2 id="安装核心插件-3d-graph">安装核心插件：3D Graph</h2>
+<h3 id="第一步-在社区插件库中找到并安装">第一步：在社区插件库中找到并安装</h3>
+<ol><li>打开 Obsidian 设置（<code>Settings → Community plugins</code>），点击 <strong>Browse</strong> 按钮进入社区插件列表。</li><li>在搜索框中输入 <code>3D Graph</code>。你应该看到一个名为 <strong>3D Graph</strong>、作者为 <strong>Apoo711</strong> 的插件条目。目前最新稳定版本为 <strong>1.0.5</strong>，与本课程兼容。</li><li>点击该条目，再点击 <strong>Install</strong>，等待安装完成（约 2–5 秒，取决于网络）。完成后“Install”按钮会变为“Enable”。</li><li>点击 <strong>Enable</strong> 启用插件。</li></ol>
+<p><strong>可观察结果</strong>：启用后，Obsidian 左侧功能区的 Ribbon 区（就是属性和搜索图标所在的那一列竖条）会多出一个立方体模样的新图标，鼠标悬停时提示 “3D Graph”。如果没有看到，按 <code>Ctrl/Cmd + P</code> 打开命令面板，输入 <code>3D Graph: Open 3D Graph</code> 并回车——如果能出现命令，说明插件已安装但图标被隐藏；如果搜不到命令，则安装未成功，回头检查 Community plugins 列表中 3D Graph 是否处于“Enabled”状态。</p>
+<h3 id="第二步-打开你的第一张-3d-图谱">第二步：打开你的第一张 3D 图谱</h3>
+<p>点击 Ribbon 中的立方体图标，或通过命令面板执行 <code>3D Graph: Open 3D Graph</code>。Obsidian 将在当前工作区右侧或下侧打开一个新的视图面板——<strong>你的 3D 图谱诞生了</strong>。</p>
+<p>初次打开时渲染可能需 2–5 秒，取决于笔记数量（100 篇以下瞬间完成，500 篇以上建议等几秒让节点布局稳定）。此时你看到的应该是一个深色背景上悬浮的立体节点网络，节点用半透明小球表示，连线用细线表示。如果屏幕一片空白，先检查你的笔记库是否确实有笔记且它们之间存在双链——笔记库中若多是孤立笔记，图中节点会零散分布，连线也会很稀疏。</p>
+<blockquote><p><strong>反例警示</strong>：如果你看到的是全黑背景上一个孤零零的中心点，没有任何连线，那意味着目前库中要么只有一篇笔记，要么所有笔记都尚未包含 <code>[[Wikilinks]]</code>。Obsidian 的内置图谱也一样会空荡荡。不要误以为插件坏了——回到前面的“最小前置”部分快速播种几篇双链笔记，再刷新图谱。</p></blockquote>
+<h2 id="学会探索你的立体知识宇宙-基础交互">学会探索你的立体知识宇宙——基础交互</h2>
+<p>先别急着调参数。用一分钟掌握六个动作，把 3D 图谱当成一个可以用手势操控的视图：</p>
+<div class="table-wrap"><table><thead><tr><th>动作</th><th>效果</th><th>可观察结果</th></tr></thead><tbody><tr><td>鼠标左键拖拽背景</td><td>旋转整张图谱的空间朝向</td><td>节点群围绕中心点如星体般转动；注意边缘节点在旋转时会沿更大半径划过屏幕边缘</td></tr><tr><td>鼠标滚轮滚动</td><td>缩进/拉远视野</td><td>向前滚：节点放大，看到少量节点的局部细节；向后滚：退至远处，笔记群落缩小为一个星团，连线的宏观布局浮现</td></tr><tr><td>鼠标右键拖拽</td><td>在不旋转的前提下平移视野</td><td>类似用手指在地图上拖动，视角不变但“相机”沿 XY 方向滑动</td></tr><tr><td>单机某一节点</td><td>选中节点，面板顶部显示笔记标题</td><td>节点高亮，标题出现在图谱上方横条；如果节点对应笔记同时打开预览窗，可确认它是哪篇笔记</td></tr><tr><td>双击某一节点</td><td>在 Obsidian 中立即打开该笔记</td><td>Obsidian 自动跳转至该 <code>.md</code> 文件；3D 视图不关闭</td></tr><tr><td>长按某节点拖拽</td><td>手动重新摆布该节点在三维空间中的位置</td><td>节点会随鼠标移动到新位置，方便你以自定义布局观察局部关系</td></tr></tbody></table></div>
+<p><strong>试一下</strong>：打开 3D 图谱后，缓慢滚轮退远，直到能看到几乎所有节点的分布轮廓；然后随意点选一个看起来处在“桥梁”位置（同时连接了多个不同颜色/群落的节点）的笔记，双击它，检查内容。如果它的确在谈论一个跨界主题（比如你的一篇名为“如何用编程思维写文章”的笔记，同时链接了技术笔记和写作笔记），那么这表示你找到了 3D 图谱的第一个实用价值：<strong>桥梁笔记发现</strong>。</p>
+<h3 id="交互中的边界行为">交互中的边界行为</h3>
+<ul><li>当你把镜头缩放到极端近处（滚轮一直向前），节点会充满整个视野甚至穿出相机后方，导致画面突然空白或出现巨大的多边形碎片，这是 Three.js 的“近裁剪面”效应。此时不急，往后滚轮退远即可恢复。</li><li>如果你双击一个节点却没有任何反应，请先检查 Obsidian 是否被其他弹出窗口遮挡了跳转动作。偶尔一些键盘快捷键插件会拦截鼠标事件，这时可以改为右键节点，从菜单中选择“Open in New Tab”来打开笔记。</li></ul>
+<h2 id="为你的知识群落着色-颜色映射配置">为你的知识群落着色——颜色映射配置</h2>
+<p>要想一眼区分笔记类别，你需要为不同笔记分配不同颜色。默认情况下所有节点是同一个色。现在进入 Settings → Community plugins → 3D Graph 插件，找到 <strong>Color Groups</strong> 配置区。</p>
+<h3 id="一个最小有效的配置-按文件夹-路径分组">一个最小有效的配置：按文件夹/路径分组</h3>
+<p>假设你的笔记库结构如下：</p>
+<figure class="code-card"><div class="code-toolbar"><span>text</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="text">Vault/
+├── 1-技术/
+│   └── RAG学习.md
+│   └── GraphRAG原理.md
+├── 2-读书/
+│   └── 思考快与慢.md
+├── 3-项目/
+│   └── 课程笔记-第7章.md</code></pre></figure>
+<p>你可以新增这样三条分组规则：</p>
+<ol><li>找到 <code>Color Groups</code> 中 <code>Add Color Group</code> 按钮。</li><li>第一组：<code>Query</code> 填入 <code>path: 1-技术</code>，<code>Color</code> 选择一个科技感蓝色（<code>#3b82f6</code>）。</li><li>第二组：<code>Query</code> 填入 <code>path: 2-读书</code>，<code>Color</code> 选暖橙色（<code>#f97316</code>）。</li><li>第三组：<code>Query</code> 填入 <code>path: 3-项目</code>，<code>Color</code> 选绿色（<code>#22c55e</code>）。</li></ol>
+<p><strong>Query 字段支持 Obsidian 搜索语法</strong>，包括按路径 <code>path:</code>、按标签 <code>tag:</code>、按文件名 <code>file:</code> 等。保存设置后，重新打开 3D 图谱或刷新视图（关闭后再打开面板，或命令面板执行 <code>3D Graph: Refresh</code>）。节点现在应该按文件夹分色，每一个颜色代表一个知识群落。</p>
+<p><strong>可观察判断标准</strong>：技术笔记节点为蓝色，读书笔记节点为橙色，项目笔记节点为绿色。如果某个笔记不在任何规则内，它会保留默认颜色（一般为灰色），这恰好让你一眼识别缺少分类的“流浪笔记”。</p>
+<h3 id="常见着色反例-query-误写导致颜色消失">常见着色反例：query 误写导致颜色消失</h3>
+<p>不少第一次配置颜色分组的学习者会碰到“明明填了 query，节点仍是灰色”的情况。以下是三个典型错误与纠正方法，你把它们当作快速排查清单即可：</p>
+<div class="table-wrap"><table><thead><tr><th>错误写法</th><th>后果</th><th>为什么？</th><th>正确写法</th></tr></thead><tbody><tr><td><code>path:1-技术</code>（缺少空格）</td><td>规则不生效，节点无颜色</td><td>Obsidian 搜索语法要求 <code>path:</code> 后跟一个空格，再写路径片段</td><td><code>path: 1-技术</code></td></tr><tr><td><code>path: 1-技术/</code>（末尾带斜杠）</td><td>匹配不到任何文件夹</td><td>文件夹名称中通常不包含 <code>/</code>，除非整个路径带有子文件夹</td><td><code>path: 1-技术</code> 或 <code>path: 1-技术/RAG</code></td></tr><tr><td><code>Path: 1-技术</code>（大写 P）</td><td>不生效</td><td>搜索关键词区分大小写，<code>path</code> 必须全小写</td><td><code>path: 1-技术</code></td></tr></tbody></table></div>
+<p>另外注意：规则顺序从上到下匹配。如果你把最宽泛的 <code>path: 1</code> 放在第一行，它会吞掉所有以“1”开头的路径，后面更细的规则（如 <code>path: 1-技术</code>）就再也没机会生效了。始终把最具体的查询放在顶部。</p>
+<h3 id="进阶-用标签着色加一层热度标记">进阶：用标签着色加一层热度标记</h3>
+<p>如果你在第 2 章中为笔记 YAML 前置信息设计了 <code>status</code> 或 <code>type</code> 字段，可以通过 <code>tag:</code> 语法进一步区分，例如把“待整理”标签的笔记设为浅灰绿色以提醒自己。这里举一个针对标签的查询：<code>tag:#review-needed</code>。将此规则的颜色设为低饱和度黄绿色，并把该规则<strong>拖拽到规则列表的最上方</strong>，因为插件从上到下匹配，第一条命中的规则决定颜色。这样那些需要审阅的笔记即使在技术群落里也会以特定颜色标识出来。</p>
+<p>完成分组后，你可能第一次看清你的知识库长什么样——哪些区域星团密集，哪些区域稀疏，中间有没有横跨多个群落的“星桥”。</p>
+<h2 id="调一调-让图谱更好看也更好用-参数手册">调一调，让图谱更好看也更好用——参数手册</h2>
+<p>插件提供一系列调整参数，都在插件设置面板中。下表按用途分组，只列出你真正需要改动的，其他保持默认即可。</p>
+<h3 id="力导向布局参数">力导向布局参数</h3>
+<div class="table-wrap"><table><thead><tr><th>参数</th><th>默认值</th><th>作用</th><th>何时调整</th><th>可观察效果</th></tr></thead><tbody><tr><td><code>Link Distance</code></td><td>100</td><td>设定有直接双链的笔记节点之间的理想间距</td><td>新闻网过多、图谱看起来像一捆乱麻时，增加此值以拉伸连线；若节点太分散且相关笔记相隔很远，减小以收紧群组</td><td>增大后相互链接的笔记在空间中拉开，清晰显示链接结构；减小后链接紧密的节点聚合成密集簇</td></tr><tr><td><code>Link Strength</code></td><td>1</td><td>连接力的强度，影响布局算法拉拢节点的力道</td><td>希望更弱链接的节点容易漂远可以降低值；如果连接过于松散可以增加力让相关笔记靠得更近</td><td>从 1 调至 0.2 后一些弱关联的笔记离中心更远，浮现出几个感知上联系并不牢固的合作关系</td></tr><tr><td><code>Center Strength</code></td><td>0</td><td>把节点拉向图谱中心的力</td><td>设为 0 时完全不拉拢，图谱呈自然展开；增加可以让节点按线性程度往中心聚拢，适合整体观察</td><td>设为 0.5 后边缘孤立笔记会整体向视野中心收缩，在宏观视图下不易丢失于视野之外</td></tr><tr><td><code>Charge Force</code></td><td>-300</td><td>节点之间的斥力；负数越大排斥越强，节点更趋均匀分布</td><td>节点太挤时减小此值的绝对值（比如改成 -150）；节点太散、间距过大时增大绝对值</td><td>-600 会让所有节点彼此推远，面积更大； -50 则节点趋近，小群落更显密集</td></tr></tbody></table></div>
+<h3 id="视觉效果参数">视觉效果参数</h3>
+<div class="table-wrap"><table><thead><tr><th>参数</th><th>默认值</th><th>作用</th><th>何时调整</th><th>可观察效果</th></tr></thead><tbody><tr><td><code>Node Scale</code></td><td>1</td><td>所有节点统一缩放因子</td><td>笔记多的库可能希望整体节点更小，设为 0.6–0.8 让视野容纳更多节点；重点探索某几个笔记时放大</td><td>设为 2 后每个球变得醒目但重叠更严重；设为 0.5 后细节变模糊但整体结构更清晰</td></tr><tr><td><code>Show Tags on Nodes</code></td><td>Off</td><td>节点上是否显示标签小徽章</td><td>当你在颜色方案中已按标签分组时可关闭；好奇某一节点标签时临时打开</td><td>开启后每个节点球上方会出现小文本标签，方便识别</td></tr><tr><td><code>Node Resolution</code></td><td>16</td><td>节点球体的几何细分，数值越高球体越圆滑</td><td>低性能集显设备可降至 8，肉眼仍可辨认为球体</td><td>把它临时调至 4，你能看到节点呈明显的多面体，说明渲染更省资源但看起来粗糙</td></tr><tr><td><code>Link Opacity</code></td><td>0.3</td><td>连线的透明度</td><td>连线少时可提高至 0.6 让它显眼；连线很多时可降至 0.15 减少杂乱感</td><td>降到 0.1 后多数连线若隐若现，只余下连接特别强或特别亮的部分</td></tr></tbody></table></div>
+<p>实操建议：<strong>先只改 <code>Link Distance</code> 和 <code>Charge Force</code> 两项</strong>，重新打开图谱观察改变，力度一次不要超过 ±50%。如果改后图谱变形过了头，点插件设置底部的 <code>Restore Defaults</code> 按钮即可复原。</p>
+<h3 id="小心这三个参数陷阱">小心这三个参数陷阱</h3>
+<p>有些参数组合会让 3D 图谱变成一团乱麻或者炸散的光点，它们本身不是 bug，但容易让你误以为插件坏了。读完这段你会知道哪些旋钮不能一下拧到底。</p>
+<ol><li><strong><code>Link Distance</code> 设为 10 以下</strong>：所有节点会紧密吸附在一起，形成一颗几乎不可分辨的“粒子球”。这在刻意强调整体群落密度时可以一用，但不适合日常探索。如果你发现自己图谱突然变成一颗小团子，先检查这个值。</li></ol>
+<ol><li><strong><code>Charge Force</code> 设为正值（如 +300）</strong>：默认是负值，提供排斥。改成正数后节点不再互斥，反而彼此吸引，整体会坍缩成一个极小的核心区域，连接线也不再舒展。这个设置通常没有实用价值，仅用于理解斥力的物理表现。如果不小心手滑，改回 -300 就恢复了。</li></ol>
+<ol><li><strong><code>Link Strength</code> 与 <code>Charge Force</code> 同时极端化</strong>：例如 <code>Link Strength = 0</code> 且 <code>Charge Force = -1200</code>，图谱会完全被斥力支配，所有节点猛地弹开，飘浮在视野极边缘，连线细得几乎看不见。这倒是一个观察纯粹排斥布局的有趣现象——你可以在片刻后恢复默认，这让你深刻体会“力导向”这个词的意思。</li></ol>
+<p>这三个陷阱演示了一件事：默认值不是随意选的，它在视觉辨识度和自动布局之间取得了平衡。任何大幅偏离都应有明确目的（比如专门展示某一笔记群的内部结构），否则保持原位即可。</p>
+<h3 id="与-obsidian-主题协作">与 Obsidian 主题协作</h3>
+<p>这个插件会自动采用你的 Obsidian 主题的强调色和暗色/亮色背景。但某些深色主题可能使连线几乎看不见，此时在参数中稍微上调 <code>Link Opacity</code> 或在主题设置中切换背景色亮度即可。如果你使用自定义 CSS 片段，需要注意的是 3D 图谱节点背景和文本色由主题变量 <code>--background-primary</code> 和 <code>--text-normal</code> 决定，所以不要在这些变量上做极端反差，否则 3D 视图可能变为“全白背景”。</p>
+<p><strong>主题反例</strong>：如果你安装了一个将 <code>--background-primary</code> 设定为纯白、<code>--text-normal</code> 设为浅灰的高对比主题，则 3D 图谱背景会变成晃眼的白色，浅灰色节点标签可能无法辨认。此时有两个选择：换回 Obsidian 默认暗色主题；或者在设置中将 <code>Link Opacity</code> 提高、并给节点分配合适的强色，以在高亮背景中维持可见度。</p>
+<h2 id="你的立体实验室-三个发现型小任务">你的立体实验室——三个发现型小任务</h2>
+<p>现在你手上有了一把新的立体透镜。放下参数表，用下面三个任务体验它真正怎么帮你发现知识结构。</p>
+<h3 id="任务一-找出-星桥-连接两个群落的跨界笔记">任务一：找出“星桥”——连接两个群落的跨界笔记</h3>
+<ol><li>颜色分组按前一小节配置为蓝（技术）、橙（读书）、绿（项目）。</li><li>从远处观察图谱，找一找有没有节点同时连接了蓝色和橙色两个星系。</li><li>临到近处，用鼠标左键选中其中一个这样的桥梁，确认笔记标题。</li><li>双击打开笔记，检查内容里是否真的论述了技术与读书的关系。</li></ol>
+<p><strong>观察与标准</strong>：如果你找不到这样的桥接节点，这本身就是一个发现——说明你的技术笔记和读书笔记可能缺乏交叉引用，此时考虑在你觉得有交叉点的两篇笔记中补一条 <code>[[双向链接]]</code>，再刷新 3D 图谱，观察图谱结构的改变。</p>
+<p><strong>反馈思考</strong>：找到一个星桥后，问自己——这篇笔记是刻意写来连接两个领域的，还是无意中成了桥梁？如果你的笔记中桥梁笔记数量少，是因为不同主题间确实缺少交叉灵感，还是你还没有来得及写下它们？这个自我提问会让你决定下一步的写作方向。</p>
+<h3 id="任务二-定位知识缺口-看到星团间的黑暗地带">任务二：定位知识缺口——看到星团间的黑暗地带</h3>
+<ol><li>缩小图谱直到能看到全部节点的分布，注意颜色区块的边界。</li><li>找到两簇大星系之间典型的“空白区域”——没有节点，没有连线，甚至没有任何灰色流浪笔记的区域。</li><li>点开其中一个星系的任意笔记，检查它是否有可能连接到另一星系的主题而未连接。</li></ol>
+<p><strong>观察与标准</strong>：比如你的“读书”星系全是关于思维模型的笔记，而“技术”星系有关于“用 AI 辅助决策”的笔记——它们之间却是空白。这是因为你没有写任何连接这两者的笔记。写一篇新笔记，标题为“《思考快与慢》中的双系统理论与 AI 推理的相似性”，并在文中主动链接到两边的笔记。保存后刷新 3D 图谱，你应该能从立体视角看到一个新节点出现在空白区域，连接了两端。</p>
+<p><strong>反馈思考</strong>：黑暗地带不一定是错误，它可能代表两个确无关联的领域。但当两个几乎“应该”有跨界的领域中间完全空白时，这往往能为你指出一些值得探索的新笔记主题。试着记录你发现的空白区，当作写作灵感池。</p>
+<h3 id="任务三-为孤立笔记找到家-收容流浪星体">任务三：为孤立笔记找到家——收容流浪星体</h3>
+<ol><li>缩小视野，专门寻找远离任何大星群的、颜色为默认灰色的孤立节点。</li><li>双击点进其中之一，检查它是关于什么主题的。</li><li>思考它是否已经有潜在归属，如果是，就给那篇笔记增加文中链接或标签来将它吸附到相应星系。如果没有，保持现状并考虑它是否在未来需要单独培育为一个新星系。</li></ol>
+<p><strong>观察与标准</strong>：做完后刷新 3D 图谱，确认被链接的节点是否向归属星系靠拢。现在你正在主动“管理知识星图”而不是被动接收 Obsidian 的默认图谱。</p>
+<h2 id="渲染原理速写-节点怎么-飞到-三维位置">渲染原理速写——节点怎么“飞到”三维位置</h2>
+<p>插件本身用 <strong>Three.js</strong> 库，通过 WebGL 直接在 GPU 上用顶点和着色器画球体和线条。你的笔记、标签和链接先被 Obsidian Graph 引擎梳理成邻接列表——也就是一个庞大的“节点关系表”——然后插件将这个表传递给一个力导向布局算法，在三维坐标系中迭代求解每个节点的 XYZ 最佳位置。</p>
+<p>这个力导向算法在三维空间同时计算以下力：</p>
+<ul><li><strong>弹簧吸引力</strong>：有双链的两点之间互拉，距离越远力越大。</li><li><strong>库仑斥力</strong>：任意两点都会推开对方，避免所有节点重叠。</li><li><strong>中心拉力</strong>（可选）：刚才参数中的 <code>Center Strength</code>，一个轻拉力把所有节点稍稍向原点拉回，防止它们炸散。</li></ul>
+<p>算法会迭代几十到上百次，每次微调节点位置，直到整体能量（称为“系统稳定度”）降到阈值以下。这就是为什么初次打开 3D 图谱时，节点会在前几秒短暂跳跃——那是它们在逐轮“寻找自己的舒适位置”。</p>
+<p>你不需要记住这段原理细节，但尝试在 <code>Link Strength</code> 极度设为 0（取消吸引力）和 <code>Charge Force</code> 极度设到 -2000 之后打开图谱，观察节点之间近乎没有任何弹簧连接而完全被斥力推到视野边缘——这有助于你体会“力”在三维空间里的工作效果。</p>
+<h3 id="亲手制造一次-力的大爆炸">亲手制造一次“力的大爆炸”</h3>
+<p>如果文字描述还不够直观，花 3 分钟做一个小实验。它不会破坏你的笔记数据，仅仅是让力导向布局的物理过程变得可见。</p>
+<ol><li>进入插件设置，将 <code>Link Strength</code> 设置为 <strong>0</strong>，<code>Charge Force</code> 设置为 <strong>-2000</strong>，<code>Center Strength</code> 保持 <strong>0</strong>。</li><li>关闭旧图谱面板，重新打开 <code>3D Graph</code>。此时你会看到节点在最初几秒剧烈向外弹射，然后几乎静止在遥远的位置，连线仅有弱痕。这就是纯粹的库仑斥力统治下的宇宙。</li><li>立即将 <code>Charge Force</code> 改回 <strong>-300</strong>，<code>Link Strength</code> 改回 <strong>1</strong>，再次刷新图谱——节点被吸引力拉回，彼此收束成有结构的星团。</li><li>最后，把 <code>Center Strength</code> 设为 <strong>2</strong>，刷新图谱：所有节点会向中心回缩，形成紧凑的星系核。此时你看到的不是默认的自然分布，而是被人为聚拢的形态。</li></ol>
+<p>通过这三个阶段，你亲眼看到了同批笔记如何在不同力学参数下变化形态。这对理解后续章节中利用图谱发现结构很有帮助——你会知道“星团稀疏”或“节点挤作一团”究竟是数据特性的体现，还是自己参数调过了头。</p>
+<h2 id="常见杂症与排查">常见杂症与排查</h2>
+<h3 id="1-3d-图谱打开后一片黑">1. 3D 图谱打开后一片黑</h3>
+<p><strong>收集证据</strong>：检查 Ribbon 图标能不能点击，命令面板有 3D Graph 命令却没有弹出新面板。从 <code>Settings → Community plugins → 3D Graph</code> 确认插件是否 Enabled。</p>
+<p><strong>排查</strong>：若未启用，启用后重新打开。若仍黑屏，尝试把 Obsidian 窗口的硬件加速选项关闭/开启一次（<code>Settings → Appearance → Hardware acceleration</code>）并重启 Obsidian。集成显卡用户遇到黑屏的概率稍高，这通常因为 WebGL 未暴露。在终端执行（任何终端） <code>chrome://gpu</code> 无法在 Obsidian 内访问，但一个简单的旁证是打开任何支持 WebGL 的在线 3D 演示（如 ShaderToy 首页），如果它们也无法渲染，说明是显卡驱动需要更新；如果演示能渲染而 Obsidian 内黑屏，则在 <code>Settings → Appearance → Hardware acceleration</code> 中关闭再打开该选项，给 Obsidian 一个干净的 GPU 分配。</p>
+<h3 id="2-图谱里无节点或仅有几条线">2. 图谱里无节点或仅有几条线</h3>
+<p><strong>证据</strong>：已安装、已启用、视图也打开了，但只有少数节点。到 Obsidian 原生 Graph View 检查：如果在那里也同样冷清，说明笔记间缺少 <code>[[Wikilinks]]</code>。回到第 6 章教程，主动创建一些双向引用。</p>
+<h3 id="3-颜色分组不生效">3. 颜色分组不生效</h3>
+<p><strong>证据</strong>：设定好了 <code>Query</code> 和颜色，重新刷新图谱，节点仍是默认色。先检查 Query 语法——<code>path:</code> 后跟的具体文件夹名不能有错，且区分大小写。其次确认这条规则的顺序：记住规则是从上到下执行，当第一条有命中节点时就不再匹配后面的。在 Color Groups 中把最具体的规则拖到顶部。</p>
+<h3 id="4-3d-图旋转时帧率卡顿">4. 3D 图旋转时帧率卡顿</h3>
+<p><strong>现象</strong>：旋转、缩放动作不连贯，有跳帧现象。降低效果压力：在插件设置中暂时关闭 <code>Show Node Labels</code>，将 <code>Node Resolution</code> 降至 10，减少同时显示节点数（关闭全局滤器，只显示当前打开注释的子图）。卡顿也常见于同时打开了多个 Obdisian 复杂插件，已占用大量 GPU 带宽。</p>
+<h3 id="5-超大知识库的边界处理">5. 超大知识库的边界处理</h3>
+<p>当你的笔记数量超过 2000 篇，即使 GPU 强劲，3D 图谱的初始布局也会变慢，因为力导向算法的点对点斥力计算量随节点平方增长。一个实用的边界策略是：在 3D Graph 插件设置中启用 <strong>Filter by open file</strong> 选项（如果插件提供），仅显示与当前活动笔记直接或间接关联的子图。或者，在 Obsidian 原生的 Graph View 中先用过滤功能选定你想探索的文件夹，然后关闭旧 3D 图谱面板，重新打开——部分版本的插件会沿用最后一次 Graph View 的过滤器范围。如果你希望进行宏观俯瞰但节点过多，临时隐藏笔记量最大的文件夹组，将 3D 图谱作为全局结构的阶段性抽样工具，而不是 24 小时常驻视图。</p>
+<h2 id="本章验收记录">本章验收记录</h2>
+<div class="table-wrap"><table><thead><tr><th>核验项</th><th>你的结果</th></tr></thead><tbody><tr><td>Ribbon 中可见 3D Graph 立方体图标</td><td>是 / 待排查</td></tr><tr><td>打开 3D 图谱视图后可见多个节点与连线</td><td>是 / 待排查</td></tr><tr><td>颜色分组至少按路径将两个文件夹标为不同颜色</td><td>是 / 未配置</td></tr><tr><td>至少手动拖拽或旋转 3D 图谱且节点跟随视角变化</td><td>是 / 待排查</td></tr><tr><td>完成“星桥”“知识缺口”“流浪笔记”三个探索练习至少一个</td><td>是 / 待尝试</td></tr><tr><td>3D 图谱在缩放全程无长时间黑屏</td><td>是 / 待排查</td></tr></tbody></table></div>
+<p>全部“是”后，再继续下一步。此刻你已经拥有一个立体的知识空间——平面图谱给了你精确的笔记管理界面，而 3D 图谱给了你探索结构和发现新颖关联的入口。这些能力在你学习第 8 章、通过 MCP 把知识图谱暴露给外部工具时，会提供直观的交互基础。接下来你可以在 3D 图谱中自由探索；三维视角下的偶然发现，可能就是你下一篇笔记的起点。</p>
+<h2 id="快速自测">快速自测</h2>
+<p>完成以下五道思考题，检验你对 3D 图谱的理解是否停留在“会旋转”层面。答案不要求逐字精确，但要点应能说清。</p>
+<ol><li>如果你的 3D 图谱中所有节点挤成了一颗小球，最可能是什么参数出了问题？应该怎样恢复？</li><li>为什么 3D 图谱能够发现平面图谱中容易被忽视的跨界关联？这与 Z 轴的存在有什么关系？</li><li>你为三个文件夹设置了蓝、橙、绿三种颜色，但其中属于“2-读书”的笔记仍显示为灰色。列举两种最可能的原因。</li><li>在什么时候应该使用 3D 图谱，什么时候应该回到 2D 图谱？请用“放大镜 / 望远镜”的比喻简单说明自己的使用策略。</li><li>你发现一个孤立的灰色节点没有连接任何其他笔记。从知识管理的角度，你会如何处理它？至少说出两种做法并解释理由。</li></ol>
+<p><strong>参考答案要点</strong>：</p>
+<ol><li><code>Link Distance</code> 值过小（例如不足 10），或者 <code>Charge Force</code> 为正值导致节点相吸。恢复方法：在插件设置中点击 <code>Restore Defaults</code>，或将 <code>Link Distance</code> 调回 100、<code>Charge Force</code> 调回 -300。</li><li>2D 图谱中，不同群落即使被连线跨越，也容易因视角平面化而重叠、遮挡；3D 图谱增加了深度轴，旋转时可以绕到某个角度，让原本被挡住的连线突然出现在视野中，这种立体遮挡解除效应正是 3D 探索跨界关联的核心优势。</li><li>可能① query 写错了（如缺少空格、大小写错误）；可能②该规则被排在另一条命中同一笔记的更宽泛规则之后，应把具体规则上移。</li><li>快速查找某笔记的直接链接、做笔记整理时用 2D（放大镜）；想要获得对知识库整体结构的直觉印象、寻找跨界灵感时切 3D（望远镜）。</li><li>做法一：如果该笔记的领域已有相关笔记，在孤立笔记中添加双链，将其拉入相应星系；做法二：如果该笔记代表一个尚无其他笔记的新领域，保留孤立状态，但它提示你可能需要在未来为该领域建立一组笔记。直接删除也不是错误，只要确认那篇笔记没有保留价值。</li></ol>
+<h2 id="参考文献">参考文献</h2>
+<ul><li><a href="https://cdn.jsdelivr.net/gh/Apoo711/obsidian-3d-graph@refs/heads/main/docs/images/open-graph.png" target="_blank" rel="noreferrer">2Dvs3D</a></li><li><a href="https://obsidian.md/" target="_blank" rel="noreferrer">Obsidian 官网</a></li></ul>
+<ul><li>Apoo711. <a href="https://github.com/Apoo711/obsidian-3d-graph" target="_blank" rel="noreferrer">obsidian-3d-graph</a>. GitHub repository, 2025. — 本章插件核心来源。</li><li>Three.js 项目组. <a href="https://threejs.org/docs/" target="_blank" rel="noreferrer">Three.js 官方文档</a>. — 插件的底层 3D 渲染引擎。</li></ul><nav class="lesson-nav"><a href="../lessons/06-obsidian-graphrag.html">← 第 6 章<br><strong>突破语义局限——基于 Obsidian 双链的 GraphRAG</strong></a><a href="../lessons/08-mcp.html">第 8 章 →<br><strong>开发者扩展——基于 MCP 与外部生态联动</strong></a></nav></main><aside class="toc"><strong>本章目录</strong><a class="" href="#把平面图谱变成立体世界-你能看到什么"><span class="toc-num">1</span>把平面图谱变成立体世界——你能看到什么？</a><a class="" href="#我们需要什么工具-先认识一下两个新面孔"><span class="toc-num">2</span>我们需要什么工具？先认识一下两个新面孔</a><a class="sub" href="#最小前置-确认你的知识库可以生成-3d-图谱"><span class="toc-num">2.1</span>最小前置：确认你的知识库可以生成 3D 图谱</a><a class="" href="#安装前的-5-秒核验"><span class="toc-num">3</span>安装前的 5 秒核验</a><a class="" href="#安装核心插件-3d-graph"><span class="toc-num">4</span>安装核心插件：3D Graph</a><a class="sub" href="#第一步-在社区插件库中找到并安装"><span class="toc-num">4.1</span>第一步：在社区插件库中找到并安装</a><a class="sub" href="#第二步-打开你的第一张-3d-图谱"><span class="toc-num">4.2</span>第二步：打开你的第一张 3D 图谱</a><a class="" href="#学会探索你的立体知识宇宙-基础交互"><span class="toc-num">5</span>学会探索你的立体知识宇宙——基础交互</a><a class="sub" href="#交互中的边界行为"><span class="toc-num">5.1</span>交互中的边界行为</a><a class="" href="#为你的知识群落着色-颜色映射配置"><span class="toc-num">6</span>为你的知识群落着色——颜色映射配置</a><a class="sub" href="#一个最小有效的配置-按文件夹-路径分组"><span class="toc-num">6.1</span>一个最小有效的配置：按文件夹/路径分组</a><a class="sub" href="#常见着色反例-query-误写导致颜色消失"><span class="toc-num">6.2</span>常见着色反例：query 误写导致颜色消失</a><a class="sub" href="#进阶-用标签着色加一层热度标记"><span class="toc-num">6.3</span>进阶：用标签着色加一层热度标记</a><a class="" href="#调一调-让图谱更好看也更好用-参数手册"><span class="toc-num">7</span>调一调，让图谱更好看也更好用——参数手册</a><a class="sub" href="#力导向布局参数"><span class="toc-num">7.1</span>力导向布局参数</a><a class="sub" href="#视觉效果参数"><span class="toc-num">7.2</span>视觉效果参数</a><a class="sub" href="#小心这三个参数陷阱"><span class="toc-num">7.3</span>小心这三个参数陷阱</a><a class="sub" href="#与-obsidian-主题协作"><span class="toc-num">7.4</span>与 Obsidian 主题协作</a><a class="" href="#你的立体实验室-三个发现型小任务"><span class="toc-num">8</span>你的立体实验室——三个发现型小任务</a><a class="sub" href="#任务一-找出-星桥-连接两个群落的跨界笔记"><span class="toc-num">8.1</span>任务一：找出“星桥”——连接两个群落的跨界笔记</a><a class="sub" href="#任务二-定位知识缺口-看到星团间的黑暗地带"><span class="toc-num">8.2</span>任务二：定位知识缺口——看到星团间的黑暗地带</a><a class="sub" href="#任务三-为孤立笔记找到家-收容流浪星体"><span class="toc-num">8.3</span>任务三：为孤立笔记找到家——收容流浪星体</a><a class="" href="#渲染原理速写-节点怎么-飞到-三维位置"><span class="toc-num">9</span>渲染原理速写——节点怎么“飞到”三维位置</a><a class="sub" href="#亲手制造一次-力的大爆炸"><span class="toc-num">9.1</span>亲手制造一次“力的大爆炸”</a><a class="" href="#常见杂症与排查"><span class="toc-num">10</span>常见杂症与排查</a><a class="sub" href="#1-3d-图谱打开后一片黑"><span class="toc-num">10.1</span>1. 3D 图谱打开后一片黑</a><a class="sub" href="#2-图谱里无节点或仅有几条线"><span class="toc-num">10.2</span>2. 图谱里无节点或仅有几条线</a><a class="sub" href="#3-颜色分组不生效"><span class="toc-num">10.3</span>3. 颜色分组不生效</a><a class="sub" href="#4-3d-图旋转时帧率卡顿"><span class="toc-num">10.4</span>4. 3D 图旋转时帧率卡顿</a><a class="sub" href="#5-超大知识库的边界处理"><span class="toc-num">10.5</span>5. 超大知识库的边界处理</a><a class="" href="#本章验收记录"><span class="toc-num">11</span>本章验收记录</a><a class="" href="#快速自测"><span class="toc-num">12</span>快速自测</a><a class="" href="#参考文献"><span class="toc-num">13</span>参考文献</a></aside></div></div></div><footer class="site-footer">从零开始，学会搭建一个酷炫的 Obsidian 个人知识库 · 人工审核稿</footer></div></body></html>

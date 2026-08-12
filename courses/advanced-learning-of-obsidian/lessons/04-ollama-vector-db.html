@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="用 Ollama 在本地同时运行 Embedding 模型和对话模型，通过 OpenAI 兼容接口对接 Smart Connections 插件，实现在不联网的情况下完成笔记索引和 RAG 问答。"><title>全本地离线闭环——Ollama + 本地 Vector DB 部署 | 从零开始，学会搭建一个酷炫的 Obsidian 个人知识库</title><script src="../assets/theme-switcher.js?v=msh7ie2o"></script><link rel="stylesheet" href="../assets/course.css?v=msh7ie2o"><script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script><script defer src="../assets/course.js?v=msh7ie2o"></script><script defer src="../assets/reading-progress.js?v=msh7ie2o"></script></head>
+<body data-course-slug="advanced-learning-of-obsidian"><div class="course-shell"><div class="lesson-page-grid"><aside class="chapter-nav" aria-label="课程章节导航"><button class="chapter-nav-toggle" type="button" aria-expanded="true" aria-controls="chapter-nav-content"><span aria-hidden="true">◀</span><span class="chapter-nav-toggle-label">收起</span></button><div class="chapter-nav-content" id="chapter-nav-content"><div class="chapter-nav-heading"><strong>课程章节</strong><span>第 4 / 9 章</span></div><nav class="chapter-nav-list"><section class="chapter-nav-module"><h2>认知基础——知识管理与RAG哲学</h2><a href="../lessons/01-rag.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">个人知识库选型与 RAG 演进哲学</span></a></section>
+<section class="chapter-nav-module"><h2>数据基石——结构化笔记与插件引擎</h2><a href="../lessons/02-rag-markdown-ast.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">面向 RAG 的 Markdown 数据建模与 AST 解析</span></a><a href="../lessons/03-api.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">插件架构拆解与云端 API 快速落地</span></a></section>
+<section class="chapter-nav-module"><h2>本地智能——离线 RAG 与高级检索</h2><a href="../lessons/04-ollama-vector-db.html" class="is-current" aria-current="page"><span class="chapter-nav-code"></span><span class="chapter-nav-title">全本地离线闭环——Ollama + 本地 Vector DB 部署</span></a><a href="../lessons/05-advanced-rag-re-ranking.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">Advanced RAG 进阶——混合检索与 Re-ranking</span></a></section>
+<section class="chapter-nav-module"><h2>知识关联——图谱与可视化</h2><a href="../lessons/06-obsidian-graphrag.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">突破语义局限——基于 Obsidian 双链的 GraphRAG</span></a><a href="../lessons/07-obsidian-3d.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">Obsidian 3D 视觉化——关系图谱与进阶效果</span></a></section>
+<section class="chapter-nav-module"><h2>工程集成——MCP 扩展与闭环进化</h2><a href="../lessons/08-mcp.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">开发者扩展——基于 MCP 与外部生态联动</span></a><a href="../lessons/09-agentic.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">知识库评估、维护与 Agentic 工作流闭环</span></a></section></nav></div></aside><div class="lesson-page-main"><header class="topbar"><a class="brand" href="../index.html">从零开始，学会搭建一个酷炫的 Obsidian 个人知识库</a><nav><a href="../index.html">课程目录</a><a href="../reference/glossary.html">术语表</a></nav></header><section class="lesson-header"><div class="eyebrow">第 4 章 · 90-120 分钟（含模型下载时间）。本章会先给出离线 RAG 的验收标准，然后按“硬件评估 → Ollama 安装 → Embedding 模型部署 → LLM 部署 → 集成 Smart Connections → 全离线验证”的顺序操作。每一步都有可观察的命令输出或界面结果；在模型下载期间，你可以阅读后面的必要原理讲解。</div><h1>全本地离线闭环——Ollama + 本地 Vector DB 部署</h1><p class="lesson-summary">用 Ollama 在本地同时运行 Embedding 模型和对话模型，通过 OpenAI 兼容接口对接 Smart Connections 插件，实现在不联网的情况下完成笔记索引和 RAG 问答。</p><a class="source-link" href="../markdown/04-ollama-vector-db.md">查看 Markdown 版本</a></section><div class="lesson-layout"><main class="lesson-content"><h2 id="一-先看本章完成后的结果">一、先看本章完成后的结果</h2>
+<p>在动手之前，先明确完成标准。本章结束时，你的电脑应能同时做到以下四点：</p>
+<ol><li>在终端执行 <code>ollama list</code>，输出的模型列表中同时包含一个 Embedding 模型（如 <code>bge-m3</code> 或 <code>nomic-embed-text</code>）和一个对话模型（如 <code>qwen2.5</code>）。</li><li>在终端用 <code>curl</code> 向 <code>http://localhost:11434/v1/embeddings</code> 发送一段文本，得到一个浮点数数组形式的嵌入向量。</li><li>在终端用 <code>curl</code> 向 <code>http://localhost:11434/v1/chat/completions</code> 提问，得到以流式 token 返回的完整回答——与第 3 章调用 DeepSeek API 时的响应格式完全一致。</li><li>在 Smart Connections 插件中将“嵌入模型”和“对话模型”的提供商都切换为“本地 Ollama”，<strong>断开网络后仍能完成笔记索引和 RAG 问答</strong>。</li></ol>
+<p>四个结果缺一不可。1 和 2 验证 Embedding 链路——笔记能否被转换成可供检索的向量；3 和 4 验证对话链路——提问能否在不联网的情况下得到基于本地笔记的回答。</p>
+<h2 id="二-为什么需要一套全离线的本地-rag">二、为什么需要一套全离线的本地 RAG</h2>
+<p>第 3 章已经跑通了端到端 RAG，但所有数据——笔记的嵌入向量和你向 AI 提出的问题——都经过了 DeepSeek 的服务器。这在以下场景中会出问题：</p>
+<ul><li><strong>隐私敏感内容</strong>：日记、项目机密、医疗或财务笔记，按合规要求不应上传到第三方 API。</li><li><strong>网络不可靠环境</strong>：飞机上、会议室屏蔽网络、服务器机房内，不能依赖云端 API。</li><li><strong>完全自主控制</strong>：更换模型版本、调整推理参数、彻底删除数据，自己做主。</li></ul>
+<p>本地 RAG 解决这些问题的核心思路是：把云端那套 API 原样搬到自己的电脑上。Ollama 在本地提供与 OpenAI 格式兼容的 HTTP 接口；Smart Connections 不关心请求是发给本地进程还是云端——这正是第 3 章结束时“bridge_to_next”的目标。</p>
+<blockquote><p><strong>为什么需要两个模型</strong>  第 3 章用 DeepSeek 同时充当了 Embedding 和对话模型，因为 DeepSeek 的 <code>deepseek-chat</code> 恰好两者都支持。但到本地部署时，这两个角色必须由<strong>两个不同的模型</strong>承担： - <strong>Embedding 模型</strong>把文本转成向量，追求高召回精度和多语言支持； - <strong>对话模型</strong>（LLM）负责理解问题、组织回答。  Ollama 会同时运行这两个模型，Smart Connections 在需要做向量索引时调用前者，在需要做 RAG 对话时调用后者。本章会逐一部署。</p></blockquote>
+<h2 id="三-部署前评估-你的电脑能跑什么模型">三、部署前评估：你的电脑能跑什么模型</h2>
+<p>在下载十几 GB 的模型文件之前，需要先评估你的硬件。这一节只有两个决定要做：<strong>选 Embedding 模型</strong> 和 <strong>选对话模型的参数规模</strong>。</p>
+<h3 id="3-1-认识-gguf-格式与量化">3.1 认识 GGUF 格式与量化</h3>
+<p>本地模型文件的常见格式是 <strong>GGUF</strong>：一种专门为本地推理设计的文件格式，支持在普通 CPU 上高效运行，也支持将部分计算卸载到 GPU。下载文件时看到的 <code>q4_K_M</code>、<code>q8_0</code> 等标签，表示模型的“量化”级别。</p>
+<ul><li><strong>量化</strong>：可以理解为对原始模型做“有损压缩”。训练好的模型内部存储了大量高精度权重，量化后把每个权重从 16 位浮点数压缩到 4 位或 8 位整数，文件变小、运行更快，但推理质量略有下降。</li><li>本章选择 <code>q4_K_M</code> 作为默认推荐：它通常在质量损失非常小的情况下显著降低显存和内存占用，适合大多数 8 GB 及以上内存的设备。</li></ul>
+<p>Ollama 会自动从它的模型库拉取合适的量化版本，你不用手动挑选量化文件，只需指定模型名和参数大小即可。</p>
+<h3 id="3-2-embedding-模型选型">3.2 Embedding 模型选型</h3>
+<p>Embedding 模型大小通常在几百 MB 到 2 GB 之间，即使是老旧设备也能轻松运行。本章提供两个选择：</p>
+<div class="table-wrap"><table><thead><tr><th>模型</th><th>特点</th><th>适用场景</th><th>下载体积（约）</th></tr></thead><tbody><tr><td><code>nomic-embed-text</code></td><td>轻量级，仅支持英文</td><td>知识库以英文为主，设备内存紧张</td><td>~270 MB</td></tr><tr><td><code>bge-m3</code></td><td>多语言、长文本（支持 8192 token），目前中文社区的事实标准</td><td>知识库包含中英文混排，追求高召回</td><td>~1.2 GB</td></tr></tbody></table></div>
+<p><strong>本章默认选择 <code>bge-m3</code></strong>，因为它对中文笔记的语义区分能力远超纯英文模型。如果你在本章中途发现内存不足（Embedding 阶段通常不会），可以随时换回 <code>nomic-embed-text</code>——切换 Embedding 模型需要<strong>重建整个向量索引</strong>，Smart Connections 中有一键按钮。</p>
+<h3 id="3-3-对话模型选型">3.3 对话模型选型</h3>
+<p>对话模型是真正的资源消耗大户。下面是几款在 Ollama 上可用的模型及其硬件需求，按推荐度排序：</p>
+<div class="table-wrap"><table><thead><tr><th>模型</th><th>参数规模</th><th>推荐量化</th><th>最低内存</th><th>推荐内存</th><th>中文能力</th></tr></thead><tbody><tr><td><code>qwen2.5:7b</code></td><td>7B</td><td>q4_K_M</td><td>8 GB</td><td>16 GB</td><td>强，通义千问家族</td></tr><tr><td><code>qwen2.5:3b</code></td><td>3B</td><td>q4_K_M</td><td>4 GB</td><td>8 GB</td><td>中上</td></tr><tr><td><code>deepseek-r1:7b</code></td><td>7B</td><td>q4_K_M</td><td>8 GB</td><td>16 GB</td><td>强，但思考链较长</td></tr><tr><td><code>qwen2.5:14b</code></td><td>14B</td><td>q4_K_M</td><td>16 GB</td><td>32 GB</td><td>强，回答质量显著提升</td></tr></tbody></table></div>
+<p><strong>内存足够（16 GB 及以上）时选 <code>qwen2.5:7b</code>；内存只有 8 GB 时选 <code>qwen2.5:3b</code>。</strong> 7B 虽然听起来大，但量化后实际运行时占用大约 5-6 GB 内存，操作系统和 Obsidian 仍能正常运行。</p>
+<p>Ollama 在 Windows 和 macOS 上都默认使用 <strong>CPU 推理</strong>，不需要独立显卡。如果你有 NVIDIA 显卡且显存 ≥ 6 GB，Ollama 会自动检测并启用 GPU 加速，速度快 5-10 倍。没有独显不影响完成本章目标，只是每次回答的等待时间会长一些（通常在 30 秒到 2 分钟之间）。</p>
+<h2 id="四-安装-ollama">四、安装 Ollama</h2>
+<p>Ollama 是本章唯一需要从网络下载的软件。它是一个本地大模型运行工具，提供了从模型下载、推理到 API 暴露的完整功能。后续的 Embedding 和对话模型都由它托管，Smart Connections 只和它对话。</p>
+<h3 id="4-1-下载与安装">4.1 下载与安装</h3>
+<ol><li>打开 Ollama 官方下载页（见本章参考文献）。</li><li>网站会自动识别你的操作系统。macOS 用户下载 <code>.dmg</code> 文件，双击后把 Ollama 图标拖入 Applications 文件夹；Windows 用户下载 <code>.exe</code> 安装程序，双击后按默认选项完成安装。</li><li>安装完成后，macOS 的顶部菜单栏和 Windows 的系统托盘会出现一个羊驼图标。这表明 Ollama 以后台服务形式运行。</li></ol>
+<h3 id="4-2-验证-ollama-运行状态">4.2 验证 Ollama 运行状态</h3>
+<p>打开终端（macOS：终端应用；Windows：PowerShell 或命令提示符），执行：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">ollama --version</code></pre></figure>
+<p>输出应显示类似 <code>ollama version 0.x.x</code> 的版本号。截至本章核验日期（2025 年 7 月），稳定版为 0.6.x 系列，任何这个范围以内的版本都能继续。</p>
+<p>接着确认服务进程在运行：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">ollama ps</code></pre></figure>
+<p>如果输出为空（仅显示表头 <code>NAME    ID    SIZE    PROCESSOR    UNTIL</code>），说明服务正常但暂未加载模型——这是正常的。如果提示连接错误，说明后台服务未启动：macOS 在 Applications 中手动启动一次 Ollama.app；Windows 在开始菜单找到 Ollama 并启动。</p>
+<blockquote><p><strong>Ollama 与模型的存储位置</strong>  Ollama 下载的模型存储在用户目录下，默认位置为： - macOS：<code>~/.ollama/models/</code> - Windows：<code>C:\Users\&lt;用户名&gt;\.ollama\models\</code>  不要在资源管理器中手动删除或移动这些文件；如需清理，使用 <code>ollama rm 模型名</code> 命令。</p></blockquote>
+<h3 id="4-3-如果遇到网络较慢">4.3 如果遇到网络较慢</h3>
+<p>Ollama 的模型文件托管在境外服务器，国内下载可能较慢。如果你的下载速度持续低于 1 MB/s，可以配置代理后重启 Ollama：</p>
+<ul><li>macOS：在终端执行 <code>launchctl setenv HTTP_PROXY &quot;http://127.0.0.1:你的代理端口&quot;</code>，然后从 Applications 重新启动应用。</li><li>Windows：在系统环境变量中设置 <code>HTTP_PROXY</code> 和 <code>HTTPS_PROXY</code> 为代理地址，然后重启服务。</li></ul>
+<p>如果完全没有代理，可以选择在模型拉取期间继续阅读后续章节的解释内容——拉取命令会持续运行，等讲解读完，模型可能已经下载好。</p>
+<h2 id="五-拉取并验证-embedding-模型">五、拉取并验证 Embedding 模型</h2>
+<p>现在拉取第一章 Embedding 模型。本课程以 <code>bge-m3</code> 为例；若你确定知识库以英文为主，把命令中的 <code>bge-m3</code> 替换为 <code>nomic-embed-text</code> 即可。</p>
+<h3 id="5-1-拉取模型">5.1 拉取模型</h3>
+<p>在终端执行：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">ollama pull bge-m3</code></pre></figure>
+<p>Ollama 会逐层下载模型文件，输出类似：</p>
+<figure class="code-card"><div class="code-toolbar"><span>text</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="text">pulling manifest
+pulling 1234abcde... 100% ▕█████████████████▏ 1.2 GB
+pulling 5678fghij... 100% ▕█████████████████▏ 12 KB
+...
+verifying sha256 digest
+writing manifest
+success</code></pre></figure>
+<p>出现 <code>success</code> 表示拉取完成。<strong>下载期间不要关闭终端。</strong></p>
+<h3 id="5-2-验证模型存在">5.2 验证模型存在</h3>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">ollama list</code></pre></figure>
+<p>输出中应看到：</p>
+<figure class="code-card"><div class="code-toolbar"><span>text</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="text">NAME          ID              SIZE      MODIFIED
+bge-m3:latest 1234abcde567    1.2 GB    刚刚</code></pre></figure>
+<p><code>SIZE</code> 列显示约 1.2 GB，与预期一致。如果显示较小或没有该条目，重新执行 <code>ollama pull bge-m3</code>。</p>
+<h3 id="5-3-动手测试-embedding-接口">5.3 动手测试 Embedding 接口</h3>
+<p>Embedding 模型拉取完成后，可以立即验证它能否正确生成向量。Ollama 自动在 <code>http://localhost:11434</code> 上暴露了 OpenAI 兼容的 Embedding 端点。用 <code>curl</code> 发送一段测试文本：</p>
+<p><strong>macOS 与 Linux：</strong></p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">curl http://localhost:11434/v1/embeddings \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;model&quot;: &quot;bge-m3&quot;,
+    &quot;input&quot;: &quot;Obsidian 是一款本地优先的知识管理工具&quot;
+  }'</code></pre></figure>
+<p><strong>Windows PowerShell：</strong></p>
+<figure class="code-card"><div class="code-toolbar"><span>powershell</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="powershell">curl http://localhost:11434/v1/embeddings -H &quot;Content-Type: application/json&quot; -d &quot;{`&quot;model`&quot;: `&quot;bge-m3`&quot;, `&quot;input`&quot;: `&quot;Obsidian 是一款本地优先的知识管理工具`&quot;}&quot;</code></pre></figure>
+<blockquote><p><strong>⚠️ Windows 用户请注意：PowerShell 中的 <code>curl</code> 不是原生 cURL</strong>  PowerShell 内置的 <code>curl</code> 实际上是 <code>Invoke-WebRequest</code> 的别名，它解析参数的方式与真正的 cURL 不同。执行上面的 PowerShell 版命令可能会失败，或只显示 HTTP 响应对象而非 JSON 内容。你有两种解决方法：  1. <strong>使用 <code>curl.exe</code>（推荐）</strong>：Windows 10 1803 及以上版本自带真正的 cURL，路径为 <code>C:\Windows\System32\curl.exe</code>。把命令中的 <code>curl</code> 替换为 <code>curl.exe</code>，其余参数与 macOS 版完全相同（不用转义引号）：    ``<code>powershell    curl.exe http://localhost:11434/v1/embeddings -H &quot;Content-Type: application/json&quot; -d '{&quot;model&quot;:&quot;bge-m3&quot;,&quot;input&quot;:&quot;Obsidian 是一款本地优先的知识管理工具&quot;}'    </code>`<code> 2. **使用 </code>Invoke-RestMethod<code>**：PowerShell 原生的 REST 客户端，无需任何转义：    </code>`<code>powershell    Invoke-RestMethod -Uri http://localhost:11434/v1/embeddings -Method Post -Headers @{&quot;Content-Type&quot;=&quot;application/json&quot;} -Body '{&quot;model&quot;:&quot;bge-m3&quot;,&quot;input&quot;:&quot;Obsidian 是一款本地优先的知识管理工具&quot;}'    </code>`<code>  本章后续所有涉及 </code>curl<code> 的 Windows 命令，均请自行替换为 </code>curl.exe<code> 或 </code>Invoke-RestMethod`，正文不再逐条重复此提示。</p></blockquote>
+<p>无论哪个系统，成功响应会返回一个 JSON，其中 <code>data[0].embedding</code> 字段是一个浮点数数组，长度通常为 1024（这是 <code>bge-m3</code> 输出维度）。你会看到类似这样的长串数字：</p>
+<figure class="code-card"><div class="code-toolbar"><span>json</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="json">{
+  &quot;object&quot;: &quot;list&quot;,
+  &quot;data&quot;: [
+    {
+      &quot;object&quot;: &quot;embedding&quot;,
+      &quot;index&quot;: 0,
+      &quot;embedding&quot;: [0.0123, -0.0456, 0.0789, ...]
+    }
+  ],
+  &quot;model&quot;: &quot;bge-m3&quot;,
+  &quot;usage&quot;: { &quot;prompt_tokens&quot;: 8, &quot;total_tokens&quot;: 8 }
+}</code></pre></figure>
+<p><strong>如果你只看到前几个数字后面是省略号 <code>...</code>，这是 curl 输出过长时终端的显示截断，不是错误。</strong> 在 <code>curl</code> 命令末尾加上 <code>| head -c 200</code> 可以只看开头。</p>
+<p>如果命令返回 <code>curl: (7) Failed to connect to localhost port 11434</code>，说明 Ollama 服务未运行（参考 4.2 节启动它）；如果返回模型未找到的信息，检查 <code>ollama list</code> 确认模型名和拉取完成状态。</p>
+<h3 id="5-4-bge-m3-为什么成为中文社区的标准选择">5.4 bge-m3 为什么成为中文社区的标准选择</h3>
+<p>理解 Embedding 模型的选择逻辑有助于排查后续问题。<code>bge-m3</code> 由北京智源人工智能研究院（BAAI）发布，有三个特点：</p>
+<ul><li><strong>多语言</strong>：训练数据同时覆盖中英文，对中文语义的理解远超只用英文训练的模型。</li><li><strong>长上下文</strong>：支持最长 8192 token 输入。大部分笔记可以整篇送入，无需在 Embedding 阶段做分块。</li><li><strong>稠密+稀疏双表示</strong>：<code>bge-m3</code> 同时输出稠密向量（用于向量相似度搜索）和稀疏词权重（可用于 BM25 关键词搜索）。本章目前只使用稠密向量部分，稀疏能力为第 5 章的混合检索提供了基础。</li></ul>
+<p>如果未来的某天你需要处理更长文档或有其他语种需求，Ollama 上的 <code>mxbai-embed-large</code>、<code>nomic-embed-text</code> 等模型均可按相同方式拉取和切换。</p>
+<h2 id="六-拉取并验证对话模型">六、拉取并验证对话模型</h2>
+<p>现在拉取对话模型。本课程以 <code>qwen2.5:7b</code> 为例；若你的内存只有 8 GB，请替换为 <code>qwen2.5:3b</code>。</p>
+<h3 id="6-1-拉取模型">6.1 拉取模型</h3>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">ollama pull qwen2.5:7b</code></pre></figure>
+<p>这次下载的量会大得多——量化后的 7B 模型约 4.5 GB。耐心等待 <code>success</code> 出现。注意：<strong>下载期间不要关闭终端</strong>，你可以把终端窗口放在后台，在本章文字中继续往下读。</p>
+<h3 id="6-2-验证模型存在">6.2 验证模型存在</h3>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">ollama list</code></pre></figure>
+<p>此时应看到两个模型：</p>
+<figure class="code-card"><div class="code-toolbar"><span>text</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="text">NAME            ID              SIZE      MODIFIED
+bge-m3:latest   1234abcde567    1.2 GB    几分钟前
+qwen2.5:7b      9876fedcba98    4.5 GB    刚刚</code></pre></figure>
+<h3 id="6-3-在终端直接对话测试">6.3 在终端直接对话测试</h3>
+<p>在拉取完成后，直接在终端测试对话：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">ollama run qwen2.5:7b</code></pre></figure>
+<p>终端会进入交互模式，提示符变为 <code>&gt;&gt;&gt; </code>。输入一句问候：</p>
+<figure class="code-card"><div class="code-toolbar"><span>text</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="text">&gt;&gt;&gt; 你好，请用一句话介绍你自己</code></pre></figure>
+<p>模型会逐字输出回答。回答结束后，输入 <code>/bye</code> 退出交互模式。</p>
+<p>如果此步顺利完成，说明对话模型可以在本机推理。相比第 3 章调用云端 API，这里的响应速度明显更慢——在纯 CPU 的 MacBook Air 上可能每秒输出 3-8 个 token——这是正常的。如果你有 NVIDIA 显卡且 Ollama 启用了 GPU 加速，速度会接近云端。</p>
+<h3 id="6-4-根据硬件实际情况调整">6.4 根据硬件实际情况调整</h3>
+<p>如果 <code>ollama run qwen2.5:7b</code> 执行后：</p>
+<ul><li><strong>系统变得非常卡顿</strong>：内存不足，Ollama 正在使用硬盘交换空间。执行 <code>ollama rm qwen2.5:7b</code> 删除它，改为 <code>qwen2.5:3b</code>。</li><li><strong>回答速度很快（≥30 token/秒）</strong>：说明 GPU 在工作，你可以尝试更大的模型 <code>qwen2.5:14b</code> 获得更高质量的回答。</li><li><strong>回答乱码或中英混杂</strong>：检查模型名是否正确。<code>qwen2.5:7b</code> 是中文优化的通义千问系列；如果误用了英文模型（如 <code>llama3.2</code>），对中文笔记的理解会差很多。</li></ul>
+<p>Windows 用户注意：如果内存只有 8 GB，Ollama 拉取 7B 模型时可能触发 Windows 的警告弹窗，直接中止下载，改用 3B 模型即可。</p>
+<h2 id="七-验证-openai-兼容的-chat-completions-端点">七、验证 OpenAI 兼容的 Chat Completions 端点</h2>
+<p>第 3 章接入 DeepSeek 时，Smart Composer 实际是在向 <code>https://api.deepseek.com/v1/chat/completions</code> 发送请求，请求体格式完全遵循 OpenAI 规范。现在 Ollama 已经在 <code>http://localhost:11434/v1/chat/completions</code> 暴露了格式完全相同的端点。</p>
+<p>用 <code>curl</code> 测试它：</p>
+<p><strong>macOS：</strong></p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">curl http://localhost:11434/v1/chat/completions \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;model&quot;: &quot;qwen2.5:7b&quot;,
+    &quot;messages&quot;: [
+      {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Obsidian 的双链功能与普通超链接有什么本质不同？请用一句话回答。&quot;}
+    ],
+    &quot;stream&quot;: false
+  }'</code></pre></figure>
+<p><strong>Windows PowerShell（请遵照 5.3 节提示，使用 <code>curl.exe</code> 或 <code>Invoke-RestMethod</code>，此处仅给出对应的 curl.exe 命令）：</strong></p>
+<figure class="code-card"><div class="code-toolbar"><span>powershell</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="powershell">curl.exe http://localhost:11434/v1/chat/completions -H &quot;Content-Type: application/json&quot; -d '{&quot;model&quot;:&quot;qwen2.5:7b&quot;,&quot;messages&quot;:[{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;Obsidian 的双链功能与普通超链接有什么本质不同？请用一句话回答。&quot;}],&quot;stream&quot;:false}'</code></pre></figure>
+<p><code>&quot;stream&quot;: false</code> 表示要求一次性返回完整结果，便于查看。成功返回的 JSON 中，<code>choices[0].message.content</code> 字段包含模型的回答。</p>
+<p>这个请求格式与第 3 章发送到 DeepSeek 的请求完全对应——相同的 <code>model</code> 字段结构，相同的 <code>messages</code> 数组，相同的 <code>choices</code> 路径提取回答。唯一的区别是 URL 从 <code>https://api.deepseek.com/v1</code> 变成了 <code>http://localhost:11434/v1</code>，以及 <code>model</code> 从 <code>deepseek-chat</code> 变成了 <code>qwen2.5:7b</code>。</p>
+<p><strong>这个一致性很关键</strong>：Smart Connections 和所有支持 OpenAI 格式的插件，在本章不需要任何代码层面的适配，只需要在设置界面中改两个字段——API 地址和模型名。</p>
+<h2 id="八-把本地服务接入-smart-connections">八、把本地服务接入 Smart Connections</h2>
+<p>从本节开始，所有操作都在 Obsidian 中进行，并且与第 3 章部署 Smart Connections 的经验直接衔接。</p>
+<h3 id="8-1-确保-smart-connections-已安装">8.1 确保 Smart Connections 已安装</h3>
+<p>如果你的 Vault 中还没有安装 Smart Connections：</p>
+<ol><li>打开 Obsidian → 设置（齿轮图标）→ 第三方插件 → 关闭安全模式。</li><li>点击“浏览”搜索 <strong>Smart Connections</strong>，作者为 Brian Petro。</li><li>安装并启用插件。</li></ol>
+<p>如果你已经跟随第 3 章安装了 Smart Connections，此时左侧边栏应该已有“Smart Connections”图标（一个带箭头的聊天气泡），并且在 <code>.obsidian/plugins/smart-connections/</code> 下可以找到向量存储文件。</p>
+<h3 id="8-2-配置本地-embedding-模型">8.2 配置本地 Embedding 模型</h3>
+<ol><li>打开 Obsidian 设置 → 第三方插件 → Smart Connections → 点击齿轮图标进入插件设置。</li><li>在 <strong>Embedding Model</strong> 部分：</li></ol>
+<ul><li>将“提供商”或“API Provider”切换到 <strong>Custom</strong> 或 <strong>Local</strong>（不同版本名称略有不同，选择非 OpenAI/Anthropic 的本地选项）。</li><li>在 <strong>API URL</strong> 或 <strong>Base URL</strong> 字段中填写：<code>http://localhost:11434/v1</code></li><li>在 <strong>Model</strong> 或 <strong>Embedding Model Name</strong> 字段中填写：<code>bge-m3</code></li><li><strong>API Key</strong> 字段留空或填 <code>ollama</code>（Ollama 服务不需要密钥，但有些插件要求此字段非空）。</li></ul>
+<ol><li>点击下方的 <strong>Test</strong> 或 <strong>Verify</strong> 按钮（如果有）。插件会发送一条测试请求到 <code>http://localhost:11434/v1/embeddings</code>，并检查返回向量维度是否正确。</li><li>如果测试成功，保存设置。</li></ol>
+<h3 id="8-3-配置本地对话模型">8.3 配置本地对话模型</h3>
+<ol><li>在同一个设置页面，找到 <strong>Chat Model</strong> 或 <strong>Completion Model</strong> 部分。</li><li>同样选择 <strong>Custom</strong> 或 <strong>Local</strong> 提供商。</li><li><strong>API URL</strong> 填写：<code>http://localhost:11434/v1</code></li><li><strong>Model</strong> 填写：<code>qwen2.5:7b</code>（或你选择的版本，如 <code>qwen2.5:3b</code>）。</li><li><strong>API Key</strong> 同样留空或填 <code>ollama</code>。</li><li>测试并保存。</li></ol>
+<h3 id="8-4-强制重建向量索引">8.4 强制重建向量索引</h3>
+<p>切换 Embedding 模型后，必须从头重建索引，因为新的 Embedding 模型生成的向量维度和语义空间与旧的完全不同（第 3 章使用的可能是 DeepSeek 的 Embedding 端点，现在变成了 <code>bge-m3</code> 的 1024 维）。混合使用不同维度的向量会导致检索功能异常或崩溃。</p>
+<p>在 Smart Connections 设置中找到 <strong>Force Re-index</strong> 或 <strong>Rebuild Index</strong> 按钮，点击后确认。插件会遍历 Vault 中所有 Markdown 文件，逐一发送到 Ollama 的 Embedding 端点，然后把返回的向量写入本地存储。</p>
+<p>索引过程中：</p>
+<ul><li>打开 Obsidian 开发者工具（Cmd/Ctrl + Shift + I），切换到 <strong>Console</strong> 面板，可以看到每个被索引文件的日志。</li><li>终端执行 <code>ollama ps</code>，会显示 <code>bge-m3</code> 正在被使用，且状态为 <code>running</code>。</li><li>索引速度取决于笔记数量和 CPU 性能。每篇笔记的 Embedding 时间通常在 0.3-2 秒之间；100 篇笔记的 Vault，全量重建大约需要 1-3 分钟。</li></ul>
+<p><strong>索引期间保持 Obsidian 打开，不要同时编辑正在被索引的笔记</strong>，否则插件可能捕获到修改事件并引发重复索引。</p>
+<h3 id="8-5-对比验证-本地索引-vs-云端索引">8.5 对比验证：本地索引 vs 云端索引</h3>
+<p>索引完成后，在 Smart Connections 面板中提问一个与你的笔记内容相关的问题，例如：</p>
+<blockquote><p>“我的知识库中关于【某个你已记录的Topic】有哪些主要观点？”</p></blockquote>
+<p>模型应返回基于笔记内容的回答。此时观察：</p>
+<ul><li>点击回答下方的“显示上下文”或“Used Notes”按钮，应能看到 Smart Connections 检索到的相关笔记文件名和片段——这证明本地 Embedding 检索链路工作正常。</li><li>回答的质量应与第 3 章中云端模型的回答可比，但可能在逻辑严谨度上略有差距——这是本地小模型与 DeepSeek 旗舰模型之间的预期差异。第 5 章会通过混合检索和重排序来缩小这一差距。</li></ul>
+<p>如果回答与你的笔记无关、胡编乱造，或是直接报错，跳到本章“故障排查”一节。</p>
+<h2 id="九-全离线验证-断网测试">九、全离线验证：断网测试</h2>
+<p>本章的核心目标是确保数据完全保留在本地，因此必须用断网测试来验证。</p>
+<h3 id="9-1-执行断网测试">9.1 执行断网测试</h3>
+<ol><li><strong>彻底断开网络连接</strong>：关闭 Wi-Fi、拔掉网线、或开启飞行模式。不要只关闭浏览器，要确保整个操作系统无法访问外部网络。</li><li>回到 Obsidian，在 Smart Connections 面板中提问一个新问题（不要重复刚才问过的，模型可能缓存了结果）。</li><li>观察回答是否仍然正常返回。</li></ol>
+<p>如果断开网络后：</p>
+<ul><li>✅ <strong>Chat 仍然给出基于笔记的回答</strong>：全离线闭环成功。Embedding 检索（纯本地文件读取 + 向量计算）和 LLM 推理（Ollama 本机进程）都不需要网络。</li><li>❌ <strong>提示连接错误或超时</strong>：插件仍试图请求云端 API。回到设置页，确认 Chat Model 的 API URL 确实是 <code>http://localhost:11434/v1</code> 而非任何 <code>https://api.*</code> 地址。</li><li>❌ <strong>回答成功但与笔记无关</strong>：检索链路可能出问题了。检查 Console 是否有 Embedding 相关错误，回到 8.4 节确认向量索引重建完成。</li></ul>
+<h3 id="9-2-断网测试通过意味着什么">9.2 断网测试通过意味着什么</h3>
+<p>现在你拥有了一个完全在本机运行的 RAG 系统：笔记文本、向量、权重和推理都在这台电脑上。即使在离线环境中，你也能向自己的知识库提问并获得基于笔记的回答。</p>
+<p>恢复网络连接后，Smart Connections 的行为与断网时完全一致——Ollama 始终在 <code>localhost</code> 处理请求，网络连接对它没有影响。</p>
+<h2 id="十-故障排查-按依赖链从外到内">十、故障排查：按依赖链从外到内</h2>
+<p>本地环境的复杂度高于纯云端配置，问题往往由多个层级叠加而成。排查时遵循“进程 → 模型 → 接口 → 插件”的顺序，每次只改变一个变量，记录结果后再进入下一层。</p>
+<h3 id="10-1-ollama-服务不可达">10.1 Ollama 服务不可达</h3>
+<p><strong>现象</strong>：任何 <code>curl http://localhost:11434/...</code> 命令返回 <code>connection refused</code>。</p>
+<p><strong>排查</strong>：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash"># 确认 Ollama 进程状态
+ollama ps</code></pre></figure>
+<p>如果此命令也报错，说明 Ollama 后台服务未运行。macOS 从 Applications 启动 Ollama；Windows 从开始菜单启动或执行 <code>ollama serve</code> 手动启动。</p>
+<p>如果 <code>ollama ps</code> 正常工作但 <code>curl</code> 仍然被拒，检查是否有防火墙拦截本地 11434 端口。<strong>Windows 用户在首次启动 Ollama 时，可能会弹出防火墙提示，必须选择“允许访问”或“允许专用网络”。</strong></p>
+<h3 id="10-2-模型未找到">10.2 模型未找到</h3>
+<p><strong>现象</strong>：<code>curl</code> 返回 “model 'bge-m3' not found”。</p>
+<p><strong>排查</strong>：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">ollama list</code></pre></figure>
+<p>确认模型已在列表中。如果不在，重新 <code>ollama pull</code> 并等待 <code>success</code>。如果模型在列表中但调用仍报错，检查模型名是否完全一致（区分大小写，带不带 <code>:latest</code> 标签都可能造成不匹配）。Ollama 的模型名以 <code>ollama list</code> 显示为准，不要在 <code>curl</code> 请求中编造版本号。</p>
+<h3 id="10-3-embedding-接口正常但插件不工作">10.3 Embedding 接口正常但插件不工作</h3>
+<p><strong>现象</strong>：<code>curl</code> 可以正常获取向量，但 Smart Connections 提示 Embedding 测试失败。</p>
+<p><strong>排查</strong>：</p>
+<ul><li>确认插件设置中的 Model 名称与 <code>ollama list</code> 输出完全一致，包括 <code>:latest</code> 后缀。</li><li>在浏览器中直接访问 <code>http://localhost:11434/</code>，如果看到 “Ollama is running”，说明服务端口正常。</li><li>打开 Obsidian 开发者工具 → Console，查看插件测试时的具体错误信息。</li></ul>
+<h3 id="10-4-chat-回答乱码或无视笔记内容">10.4 Chat 回答乱码或无视笔记内容</h3>
+<p><strong>现象</strong>：回答语法混乱、中英掺杂、或明显在“背稿”而非基于检索到的笔记。</p>
+<p><strong>排查顺序</strong>：</p>
+<ol><li><strong>先确认对话模型是否选对</strong>：在终端执行 <code>ollama run qwen2.5:7b &quot;Obsidian是什么？一句话回答&quot;</code>，观察输出质量。如果终端中的回答也乱码，说明模型本身不合格——可能是下载中断、文件损坏，执行 <code>ollama rm qwen2.5:7b &amp;&amp; ollama pull qwen2.5:7b</code> 重新拉取。</li><li><strong>终端回答正常但插件回答无视笔记</strong>：问题出在检索层，而非对话层。回到 Smart Connections 面板，提问后点击“显示上下文”，检查检索到的笔记片段是否确实与你问的主题相关。如果检索到的片段风马牛不相及，回到 8.4 节确认索引已重建。</li><li><strong>检索正确但模型仍然编造</strong>：本地 7B/3B 模型的知识储备和推理能力有限。如果笔记片段本身信息量少或有歧义，小模型可能编造内容来“圆”回答。第 5 章的 Re-ranking 和更精准的片段召回可以改善这一问题。</li></ol>
+<h3 id="10-5-索引速度极慢或卡住">10.5 索引速度极慢或卡住</h3>
+<p><strong>现象</strong>：Smart Connections 索引进度条长时间不前进，或单个文件处理超过 10 秒。</p>
+<p><strong>排查</strong>：</p>
+<ul><li>在终端执行 <code>ollama ps</code> 确认 <code>bge-m3</code> 模型仍在运行。如果列表为空，Ollama 可能因内存不足而卸载了模型（这种情况下通常 Console 会有“model not loaded”错误）。尝试重启 Ollama 并重新触发索引。</li><li>极少数笔记文件如果包含大量非文本内容（如嵌入的 Base64 图片），可能导致 Embedding 请求过载。检查 Vault 中是否有特别大的 <code>.md</code> 文件（超过 1 MB），暂时移出 Vault 完成索引后再移回。</li></ul>
+<h2 id="十一-本章验收记录">十一、本章验收记录</h2>
+<p>完成本章后，填写下面的核验表。每一项都需要有直接的观察结果支持，不要凭感觉勾选。</p>
+<div class="table-wrap"><table><thead><tr><th>核验项</th><th>你的结果</th><th>检查方法</th></tr></thead><tbody><tr><td>Ollama 版本</td><td></td><td><code>ollama --version</code></td></tr><tr><td>Embedding 模型在列表中</td><td></td><td><code>ollama list</code> 含 <code>bge-m3</code></td></tr><tr><td>对话模型在列表中</td><td></td><td><code>ollama list</code> 含 <code>qwen2.5:7b</code> 或你选择的版本</td></tr><tr><td>Embedding 端点返回向量</td><td></td><td><code>curl http://localhost:11434/v1/embeddings</code> 返回 <code>embedding</code> 数组</td></tr><tr><td>Chat 端点返回回答</td><td></td><td><code>curl http://localhost:11434/v1/chat/completions</code> 返回 <code>choices[0].message.content</code></td></tr><tr><td>Smart Connections Embedding 测试通过</td><td></td><td>插件设置页中 Test/Verify 按钮提示成功</td></tr><tr><td>Smart Connections Chat 设置完成</td><td></td><td>设置页中 API URL 为 <code>http://localhost:11434/v1</code></td></tr><tr><td>向量索引已重建</td><td></td><td>Console 中看到各文件索引日志，或索引进度条完成</td></tr><tr><td><strong>断网后 RAG 问答成功</strong></td><td></td><td><strong>关闭 Wi-Fi，Smart Connections 仍能基于笔记回答</strong></td></tr></tbody></table></div>
+<p>最后一行“断网后 RAG 问答成功”是本章必须通过的硬性标准。如果没有达成，请对照故障排查节查找原因，直到显示“成功”再进入第 5 章。</p>
+<h2 id="十二-本章回顾">十二、本章回顾</h2>
+<p>你已经把第 3 章的云端 RAG 链路完整地迁移到了本地。现在笔记本上的 Markdown 文件在需要时被转换成向量存入本地索引，你的提问在本地被转成向量去匹配那些片段，再由本地运行的对话模型整合成回答——整个过程没有一个字节离开这台电脑。</p>
+<p>回顾第 2 章的原子化笔记和 YAML Frontmatter，它们在这一章首次在“离线环境”中被加载到语义检索系统中，成为可被查询的知识单元。接下来第 5 章将直面目前这套纯向量检索的局限——专有名词、代码片段和英文缩写仍可能被漏掉——并引入关键词搜索和重排序来弥补这些不足。</p>
+<h2 id="参考文献">参考文献</h2>
+<ul><li>Ollama. <a href="https://ollama.com/download" target="_blank" rel="noreferrer">Ollama 官方下载页</a>.</li><li>Ollama. <a href="https://docs.ollama.com/api/openai-compatibility" target="_blank" rel="noreferrer">OpenAI Compatibility 文档</a>.</li><li>BAAI. <a href="https://huggingface.co/BAAI/bge-m3" target="_blank" rel="noreferrer">bge-m3 模型说明页</a>.</li><li>Alibaba Cloud. <a href="https://huggingface.co/Qwen" target="_blank" rel="noreferrer">Qwen2.5 模型系列</a>.</li><li>Brian Petro. <a href="https://github.com/brianpetro/obsidian-smart-connections" target="_blank" rel="noreferrer">Smart Connections 插件文档</a>.</li></ul><nav class="lesson-nav"><a href="../lessons/03-api.html">← 第 3 章<br><strong>插件架构拆解与云端 API 快速落地</strong></a><a href="../lessons/05-advanced-rag-re-ranking.html">第 5 章 →<br><strong>Advanced RAG 进阶——混合检索与 Re-ranking</strong></a></nav></main><aside class="toc"><strong>本章目录</strong><a class="" href="#一-先看本章完成后的结果"><span class="toc-num">1</span>一、先看本章完成后的结果</a><a class="" href="#二-为什么需要一套全离线的本地-rag"><span class="toc-num">2</span>二、为什么需要一套全离线的本地 RAG</a><a class="" href="#三-部署前评估-你的电脑能跑什么模型"><span class="toc-num">3</span>三、部署前评估：你的电脑能跑什么模型</a><a class="sub" href="#3-1-认识-gguf-格式与量化"><span class="toc-num">3.1</span>3.1 认识 GGUF 格式与量化</a><a class="sub" href="#3-2-embedding-模型选型"><span class="toc-num">3.2</span>3.2 Embedding 模型选型</a><a class="sub" href="#3-3-对话模型选型"><span class="toc-num">3.3</span>3.3 对话模型选型</a><a class="" href="#四-安装-ollama"><span class="toc-num">4</span>四、安装 Ollama</a><a class="sub" href="#4-1-下载与安装"><span class="toc-num">4.1</span>4.1 下载与安装</a><a class="sub" href="#4-2-验证-ollama-运行状态"><span class="toc-num">4.2</span>4.2 验证 Ollama 运行状态</a><a class="sub" href="#4-3-如果遇到网络较慢"><span class="toc-num">4.3</span>4.3 如果遇到网络较慢</a><a class="" href="#五-拉取并验证-embedding-模型"><span class="toc-num">5</span>五、拉取并验证 Embedding 模型</a><a class="sub" href="#5-1-拉取模型"><span class="toc-num">5.1</span>5.1 拉取模型</a><a class="sub" href="#5-2-验证模型存在"><span class="toc-num">5.2</span>5.2 验证模型存在</a><a class="sub" href="#5-3-动手测试-embedding-接口"><span class="toc-num">5.3</span>5.3 动手测试 Embedding 接口</a><a class="sub" href="#5-4-bge-m3-为什么成为中文社区的标准选择"><span class="toc-num">5.4</span>5.4 bge-m3 为什么成为中文社区的标准选择</a><a class="" href="#六-拉取并验证对话模型"><span class="toc-num">6</span>六、拉取并验证对话模型</a><a class="sub" href="#6-1-拉取模型"><span class="toc-num">6.1</span>6.1 拉取模型</a><a class="sub" href="#6-2-验证模型存在"><span class="toc-num">6.2</span>6.2 验证模型存在</a><a class="sub" href="#6-3-在终端直接对话测试"><span class="toc-num">6.3</span>6.3 在终端直接对话测试</a><a class="sub" href="#6-4-根据硬件实际情况调整"><span class="toc-num">6.4</span>6.4 根据硬件实际情况调整</a><a class="" href="#七-验证-openai-兼容的-chat-completions-端点"><span class="toc-num">7</span>七、验证 OpenAI 兼容的 Chat Completions 端点</a><a class="" href="#八-把本地服务接入-smart-connections"><span class="toc-num">8</span>八、把本地服务接入 Smart Connections</a><a class="sub" href="#8-1-确保-smart-connections-已安装"><span class="toc-num">8.1</span>8.1 确保 Smart Connections 已安装</a><a class="sub" href="#8-2-配置本地-embedding-模型"><span class="toc-num">8.2</span>8.2 配置本地 Embedding 模型</a><a class="sub" href="#8-3-配置本地对话模型"><span class="toc-num">8.3</span>8.3 配置本地对话模型</a><a class="sub" href="#8-4-强制重建向量索引"><span class="toc-num">8.4</span>8.4 强制重建向量索引</a><a class="sub" href="#8-5-对比验证-本地索引-vs-云端索引"><span class="toc-num">8.5</span>8.5 对比验证：本地索引 vs 云端索引</a><a class="" href="#九-全离线验证-断网测试"><span class="toc-num">9</span>九、全离线验证：断网测试</a><a class="sub" href="#9-1-执行断网测试"><span class="toc-num">9.1</span>9.1 执行断网测试</a><a class="sub" href="#9-2-断网测试通过意味着什么"><span class="toc-num">9.2</span>9.2 断网测试通过意味着什么</a><a class="" href="#十-故障排查-按依赖链从外到内"><span class="toc-num">10</span>十、故障排查：按依赖链从外到内</a><a class="sub" href="#10-1-ollama-服务不可达"><span class="toc-num">10.1</span>10.1 Ollama 服务不可达</a><a class="sub" href="#10-2-模型未找到"><span class="toc-num">10.2</span>10.2 模型未找到</a><a class="sub" href="#10-3-embedding-接口正常但插件不工作"><span class="toc-num">10.3</span>10.3 Embedding 接口正常但插件不工作</a><a class="sub" href="#10-4-chat-回答乱码或无视笔记内容"><span class="toc-num">10.4</span>10.4 Chat 回答乱码或无视笔记内容</a><a class="sub" href="#10-5-索引速度极慢或卡住"><span class="toc-num">10.5</span>10.5 索引速度极慢或卡住</a><a class="" href="#十一-本章验收记录"><span class="toc-num">11</span>十一、本章验收记录</a><a class="" href="#十二-本章回顾"><span class="toc-num">12</span>十二、本章回顾</a><a class="" href="#参考文献"><span class="toc-num">13</span>参考文献</a></aside></div></div></div><footer class="site-footer">从零开始，学会搭建一个酷炫的 Obsidian 个人知识库 · 人工审核稿</footer></div></body></html>

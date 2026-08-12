@@ -1,0 +1,22 @@
+{
+  "body_generated": true,
+  "pending_stage": "completed",
+  "path": "lessons/06-obsidian-graphrag.md",
+  "effective_chars": 13314,
+  "humanizer_score": 47,
+  "semantic_review": {
+    "score": 93,
+    "decision": "ready",
+    "issues": [
+      "[minor] 代码风险 | 证据：『func=lambda texts: ollama_embedding(texts, embed_model=\"bge-m3\")』 | 建议：补充 ollama_embedding 作为 EmbeddingFunc 的适配说明，避免初学者因接口不匹配直接报错。",
+      "[minor] 可核验性弱 | 证据：『LightRAG（github.com/HKUDS/LightRAG）是香港大学数据科学实验室开源的一个轻量级 GraphRAG 实现』 | 建议：补充 HKUDS 实验室与 LightRAG 的关联出处或论文引用，增强学术信度。"
+    ],
+    "strengths": [
+      "从具体问题推导 GraphRAG 必要性的教学设计有效，受控实验清晰对比了向量检索和图谱遍历的差异。",
+      "双轨并行（人工双链 + LLM 抽取）的融合策略论述精准，充分体现 Obsidian 独特优势。",
+      "章末验证实验设计有层次，覆盖对比、诊断、设计、识别边界，能有效检验学习成果。",
+      "明确划分 GraphRAG 与向量 RAG 的适用边界，避免学习者误解为替代关系。",
+      "已忽略 2 条无法在原文定位的审校结论。"
+    ]
+  }
+}

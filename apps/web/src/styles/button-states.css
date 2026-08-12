@@ -1,0 +1,15 @@
+/* The studio theme uses a dark green primary surface; keep its foreground
+   fixed at high contrast across resting, hover and keyboard-focus states. */
+.button.primary:hover,
+.button.primary:active {
+  color: #f8fcf5;
+}
+
+.button.primary:hover {
+  background: #28533b;
+  border-color: #28533b;
+  box-shadow: 0 5px 12px rgb(35 73 48 / .18);
+}
+
+.button.primary svg { color: currentColor; stroke-width: 2; }
+.button.primary:focus-visible { outline: 3px solid rgb(116 160 77 / .42); outline-offset: 3px; }

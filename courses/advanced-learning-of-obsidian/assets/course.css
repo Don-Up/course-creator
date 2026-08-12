@@ -1,0 +1,20 @@
+@import url("../../../assets/course-theme.css");
+:root { --course-mark: "AICR"; }
+
+/* Reading progress: highlight read lessons in chapter navigation */
+.chapter-nav-list a.is-read {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  padding-left: 5px;
+}
+.chapter-nav-list a.is-read .chapter-nav-title {
+  color: var(--muted-strong);
+}
+.chapter-nav-list a.is-read:hover {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-raised));
+}
+.read-badge {
+  color: var(--accent);
+  font-weight: 600;
+  margin-left: 2px;
+}

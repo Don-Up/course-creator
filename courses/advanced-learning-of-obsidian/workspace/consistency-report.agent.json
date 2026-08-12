@@ -1,0 +1,16 @@
+{
+  "decision": "pass",
+  "issues": [],
+  "canonical_requirements": [
+    "MISSION.md 已将新增的 3D 章节（第7章）纳入课程范围，章节数量为9，技术路线保持知识关联模块包含第6、7章。",
+    "COURSE-BLUEPRINT.md 已定义第7章为 Obsidian 3D 视觉化——关系图谱与进阶效果，模块划分、章节顺序与设计备注均反映全局变更。",
+    "COURSE-GENERATION-SPEC.md 设置期望章节数为9，以蓝图为准，无旧版本残留。",
+    "course.json 元数据包含 planned_chapter_count: 9，模块 \"知识关联——图谱与可视化\" 涵盖章节6和7，标题与蓝图一致。",
+    "research.agent.json 查询列表中包含 3D 图插件关键词，且来源政策为允许用户资料与官方资料，与 MISSION 一致。",
+    "全局变更请求\"增加一个章节，主要讲基于 Obsidian 的 3D 进阶效果\"已在所有受控文件中落实，无遗漏。"
+  ],
+  "contract_sync": {
+    "chapter_count": 9,
+    "synced_files": []
+  }
+}

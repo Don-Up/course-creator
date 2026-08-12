@@ -1,0 +1,20 @@
+{
+  "requests": [
+    {
+      "step": "mission",
+      "request": "增加一个章节，主要讲基于 Obsidian 的 3D 进阶效果。\nObsidian 的 3D 效果主要通过社区插件实现，最核心的功能是 3D 关系图谱（3D Graph），它能将原本平面的笔记网络转化为立体、可旋转的动态三维空间。"
+    },
+    {
+      "step": "mission",
+      "request": "增加一个章节，主要讲基于 Obsidian 的 3D 进阶效果。\nObsidian 的 3D 效果主要通过社区插件实现，最核心的功能是 3D 关系图谱（3D Graph），它能将原本平面的笔记网络转化为立体、可旋转的动态三维空间。"
+    },
+    {
+      "step": "generation",
+      "request": "完成8-9章在质检环节检测到的问题"
+    },
+    {
+      "step": "generation",
+      "request": "完成8-9章在质检环节检测到的问题"
+    }
+  ]
+}

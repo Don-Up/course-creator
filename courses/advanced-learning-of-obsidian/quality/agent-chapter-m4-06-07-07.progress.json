@@ -1,0 +1,20 @@
+{
+  "body_generated": true,
+  "pending_stage": "completed",
+  "path": "lessons/07-obsidian-3d.md",
+  "effective_chars": 11510,
+  "humanizer_score": 46,
+  "semantic_review": {
+    "score": 91,
+    "decision": "ready",
+    "issues": [
+      "[minor] 事实错误 | 证据：『在终端执行（任何终端） `chrome://gpu` 无法在 Obsidian 内访问』 | 建议：将“终端执行”改为“在 Chrome 浏览器地址栏输入 `chrome://gpu` 查看 WebGL 状态”。"
+    ],
+    "strengths": [
+      "比喻生动：“建筑蓝图与乐高模型”“放大镜与望远镜”形象化2D/3D互补关系，降低抽象门槛。",
+      "脚手架周全：提供前置检查清单、种子库快速生成双链、参数反例表，让初学者无惧配置。",
+      "练习设计巧妙：三个发现型任务（星桥、知识缺口、流浪笔记）驱动主动探索，即时反馈强化技能。",
+      "原理+实验：简述力导向算法并设计“力的大爆炸”实验，使抽象力学过程可视化，加深理解。"
+    ]
+  }
+}

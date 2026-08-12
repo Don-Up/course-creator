@@ -1,0 +1,152 @@
+@media (max-width: 1100px) {
+    .sidebar {
+        width: 62px;
+        padding: 15px 8px;
+    }
+
+    .brand {
+        padding: 5px 8px 25px;
+    }
+
+    .brand>span:last-child,
+    .main-nav a {
+        font-size: 0;
+    }
+
+    .main-nav a {
+        justify-content: center;
+        padding: 0;
+    }
+
+    .main-nav a svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .sidebar-status>div,
+    .sidebar-status>svg {
+        display: none;
+    }
+
+    .sidebar-status {
+        justify-content: center;
+        padding: 13px 0;
+    }
+
+    .content-shell {
+        margin-left: 62px;
+    }
+
+    .event-dock {
+        position: static;
+        width: auto;
+        max-height: none;
+        margin-top: 14px;
+    }
+
+    .event-dock .event-list {
+        max-height: 260px;
+    }
+
+    .runtime-manifest {
+        grid-template-columns: 1fr;
+    }
+
+    .workflow-canvas-heading {
+        flex-direction: column;
+    }
+
+    .workflow-canvas-legend {
+        justify-content: flex-start;
+    }
+
+    .workflow-node-inspector {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 720px) {
+    .topbar {
+        padding: 0 15px;
+    }
+
+    .topbar .eyebrow {
+        display: none;
+    }
+
+    .page {
+        padding: 18px 13px 36px;
+    }
+
+    .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-header h1 {
+        display: grid;
+        gap: 5px;
+        font-size: 18px;
+        flex-wrap: wrap;
+    }
+
+    .page-header h1 small {
+        white-space: normal;
+    }
+
+    .course-grid,
+    .metric-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .workflow-map {
+        overflow-x: auto;
+    }
+
+    .workflow-map-segment {
+        min-width: 128px;
+    }
+
+    .topology-heading,
+    .topology-lane>header {
+        flex-direction: column;
+    }
+
+    .topology-heading {
+        padding: 17px;
+    }
+
+    .topology-lane {
+        padding: 16px;
+    }
+
+    .topology-nodes {
+        grid-template-columns: 1fr;
+    }
+
+    .runtime-manifest {
+        font-size: 9px;
+    }
+
+    .phase-rail {
+        padding: 9px;
+    }
+
+    .step-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .step-input-panel {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .run-content-tabs {
+        overflow-x: auto;
+    }
+
+    .run-content-tabs button {
+        min-width: 110px;
+    }
+}

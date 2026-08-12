@@ -1,0 +1,24 @@
+{
+  "body_generated": true,
+  "pending_stage": "completed",
+  "path": "lessons/09-agentic.md",
+  "effective_chars": 11803,
+  "humanizer_score": 49,
+  "semantic_review": {
+    "score": 90,
+    "decision": "ready",
+    "issues": [
+      "[Minor] 受众适配与脚手架 | 证据：『pip install lancedb ragas==0.1.20 datasets requests pyyaml』 | 建议：datasets 库在 Windows 环境安装可能需编译工具，补充 Windows 用户使用 WSL 或预编译轮子的提示，避免安装卡住。",
+      "[Minor] 解释深度与连贯性 | 证据：『match = re.search(r\"\\[.*\\]\", text, re.DOTALL)』 | 建议：说明简单正则可能因嵌套括号或转义字符导致 JSON 解析失败，提示学习者手动检查 eval_dataset.json 是否为合法 JSON。",
+      "[Minor] 练习与反馈 | 证据：『auto_tags = [w.lower() for w in re.findall(r\"[\\u4e00-\\u9fff\\w]+\", title) if len(w) > 2][:3]』 | 建议：自动标签生成属启发式，对中文标题可能不准确，可在注释或正文中提示学习者可手动调整或让 LLM 直接输出 tags。",
+      "[Minor] 受众适配与脚手架 | 证据：『echo '{\"jsonrpc\":\"2.0\",...}' | python server.py』 | 建议：MCP 连通性测试命令假设 server.py 在当前目录，补充说明需在 MCP Server 所在路径或使用完整路径执行，避免路径错误。"
+    ],
+    "strengths": [
+      "交付契约表格清晰定义三个切片的输出、验证方式与停止条件，与学习成果高度对齐。",
+      "RAGAS 三指标解释配合具体打分示例和反例警告（虚假高相关性），深化理解。",
+      "闭环设计部分明确对比函数式流水线与 LangChain Agent 的取舍，体现工程决策教育。",
+      "独立故障修复任务有针对性，迫使学习者综合运用维护知识，附诊断报告练习强化复盘能力。",
+      "已忽略 2 条无法在原文定位的审校结论。"
+    ]
+  }
+}

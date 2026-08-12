@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="本章将你从第4章到第8章积累的所有组件——本地 RAG、GraphRAG、MCP Server、外部向量库——组装成一个能自动评估、修复并生成笔记的工作流。"><title>知识库评估、维护与 Agentic 工作流闭环 | 从零开始，学会搭建一个酷炫的 Obsidian 个人知识库</title><script src="../assets/theme-switcher.js?v=msh7ie2o"></script><link rel="stylesheet" href="../assets/course.css?v=msh7ie2o"><script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script><script defer src="../assets/course.js?v=msh7ie2o"></script><script defer src="../assets/reading-progress.js?v=msh7ie2o"></script></head>
+<body data-course-slug="advanced-learning-of-obsidian"><div class="course-shell"><div class="lesson-page-grid"><aside class="chapter-nav" aria-label="课程章节导航"><button class="chapter-nav-toggle" type="button" aria-expanded="true" aria-controls="chapter-nav-content"><span aria-hidden="true">◀</span><span class="chapter-nav-toggle-label">收起</span></button><div class="chapter-nav-content" id="chapter-nav-content"><div class="chapter-nav-heading"><strong>课程章节</strong><span>第 9 / 9 章</span></div><nav class="chapter-nav-list"><section class="chapter-nav-module"><h2>认知基础——知识管理与RAG哲学</h2><a href="../lessons/01-rag.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">个人知识库选型与 RAG 演进哲学</span></a></section>
+<section class="chapter-nav-module"><h2>数据基石——结构化笔记与插件引擎</h2><a href="../lessons/02-rag-markdown-ast.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">面向 RAG 的 Markdown 数据建模与 AST 解析</span></a><a href="../lessons/03-api.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">插件架构拆解与云端 API 快速落地</span></a></section>
+<section class="chapter-nav-module"><h2>本地智能——离线 RAG 与高级检索</h2><a href="../lessons/04-ollama-vector-db.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">全本地离线闭环——Ollama + 本地 Vector DB 部署</span></a><a href="../lessons/05-advanced-rag-re-ranking.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">Advanced RAG 进阶——混合检索与 Re-ranking</span></a></section>
+<section class="chapter-nav-module"><h2>知识关联——图谱与可视化</h2><a href="../lessons/06-obsidian-graphrag.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">突破语义局限——基于 Obsidian 双链的 GraphRAG</span></a><a href="../lessons/07-obsidian-3d.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">Obsidian 3D 视觉化——关系图谱与进阶效果</span></a></section>
+<section class="chapter-nav-module"><h2>工程集成——MCP 扩展与闭环进化</h2><a href="../lessons/08-mcp.html"><span class="chapter-nav-code"></span><span class="chapter-nav-title">开发者扩展——基于 MCP 与外部生态联动</span></a><a href="../lessons/09-agentic.html" class="is-current" aria-current="page"><span class="chapter-nav-code"></span><span class="chapter-nav-title">知识库评估、维护与 Agentic 工作流闭环</span></a></section></nav></div></aside><div class="lesson-page-main"><header class="topbar"><a class="brand" href="../index.html">从零开始，学会搭建一个酷炫的 Obsidian 个人知识库</a><nav><a href="../index.html">课程目录</a><a href="../reference/glossary.html">术语表</a></nav></header><section class="lesson-header"><div class="eyebrow">第 9 章 · 2.5 小时</div><h1>知识库评估、维护与 Agentic 工作流闭环</h1><p class="lesson-summary">本章将你从第4章到第8章积累的所有组件——本地 RAG、GraphRAG、MCP Server、外部向量库——组装成一个能自动评估、修复并生成笔记的工作流。</p><a class="source-link" href="../markdown/09-agentic.md">查看 Markdown 版本</a></section><div class="lesson-layout"><main class="lesson-content"><hr>
+<h2 id="9-0-本章前置-你应当已经熟悉的概念与组件">9.0 本章前置：你应当已经熟悉的概念与组件</h2>
+<p>在动手之前，请先回顾前几章的关键组件。如果你对其中任何一个感到模糊，请花几分钟回看对应章节的“理解检查”部分。</p>
+<ul><li><strong>嵌入（Embedding）</strong>：将一段文字转换为高维数值向量的过程。语义相近的文字，向量在空间中的距离也近。本章依赖 <code>nomic-embed-text</code> 模型完成这一转换，每次调用 Ollama 的 <code>/api/embed</code> 端点都会返回一个固定长度的数字列表。向量的“相似度”通常用余弦相似度衡量，数值从 -1 到 1，越接近 1 越相似。</li></ul>
+<ul><li><strong>LanceDB</strong>：一个纯文件存储的向量数据库，你已经在第 8 章用它保存了笔记的分块及其嵌入。它的核心操作只有三个：建表、插入向量记录、按向量相似度搜索。本章的检索步骤会直接调用 LanceDB 的 <code>search()</code> 方法，无需其他服务进程。</li></ul>
+<ul><li><strong>Ollama 本地推理</strong>：你本地的 <code>http://localhost:11434</code> 既提供嵌入模型也提供对话模型。本章使用 <code>qwen2.5:7b</code> 作为生成模型，<code>nomic-embed-text</code> 作为嵌入模型。两者的调用方式相似，只是端点不同：<code>/api/generate</code> 用于文本生成，<code>/api/embed</code> 用于向量化。</li></ul>
+<ul><li><strong>第 6 章 GraphRAG 中的实体与关系</strong>：你在 LightRAG 实验中抽取的实体三元组和双链关系，是本章评估和闭环生成的重要数据源。如果图索引已过期或未正确构建，检索将退化为纯向量搜索，影响上下文多样性。</li></ul>
+<ul><li><strong>MCP Server</strong>：第 8 章用 Python 搭建的服务器，对外暴露了 <code>search_notes</code> 工具。本章的 Agent 可以直接复用其搜索逻辑，或者直接调用 LanceDB API 获得相同效果。MCP 的只读特性将在本章被突破，因为 Agent 需要向 Obsidian 写入新笔记。</li></ul>
+<ul><li><strong>RAGAS</strong>：用于评估检索增强生成系统的框架，本章的重点工具。它不依赖人工打分的“标准答案”，而是通过大模型自己判断答案质量。它的三个核心指标——忠实度、答案相关性、上下文精准度——将在 9.3 节详细拆解。</li></ul>
+<p>现在确认你已经具备以下运行条件：Ollama 服务正常响应、LanceDB 索引目录存在且不为空、第 6 章的 LightRAG 图索引仍可加载（如果你计划结合 GraphRAG 做检索）。如果一切就绪，我们就能开始第一个切片。</p>
+<hr>
+<h2 id="9-1-交付契约-这章到底要造什么">9.1 交付契约：这章到底要造什么</h2>
+<p>在进入操作之前，先明确边界。你已拥有一个能跑的本地知识库系统：笔记存于 Obsidian，向量索引在 LanceDB，双链图谱和实体关系可从 LightRAG 索引查询，MCP Server 可对外暴露这些能力。但它目前只具备基础能力，缺少评估、维护和自动生成。</p>
+<p>本章要交付的是一个 <strong>Agentic 闭环</strong>，由三个纵向切片组成：</p>
+<div class="table-wrap"><table><thead><tr><th>切片</th><th>系统或用户得到什么</th><th>如何验证</th><th>停止条件</th></tr></thead><tbody><tr><td>评估</td><td>当前知识库的 RAG 质量分数（忠实度、答案相关性、上下文精准度）</td><td>运行评估脚本，输出 RAGAS 格式报告</td><td>三项指标均返回 0-1 之间的有效分数</td></tr><tr><td>维护</td><td>可执行的垃圾回收规则和防退化脚本</td><td>运行维护脚本后，冗余笔记被标记、孤立笔记被列出</td><td>目标目录中的 <code>.trash</code> 候选减少到 0</td></tr><tr><td>闭环</td><td>输入一个课题，系统自行检索、生成草稿、创建 Obsidian 笔记并写回双链和 Tag</td><td>在 Obsidian 中观察到新笔记文件及图谱中新增的连接</td><td>笔记文件包含至少一个 <code>[[双链]]</code> 和 Frontmatter <code>tags</code></td></tr></tbody></table></div>
+<p><strong>闭环切片的输出将直接实现第 8 章规划的目标</strong>：扩展 MCP Server 能力边界，从只读跨越到可控写入。Agent 在 <code>Research</code> 子目录下创建结构化笔记，自动填充双链与标签，使知识库具备自动扩展的能力。它复用第 8 章的检索逻辑，但新增 <code>write_note</code> 写入步骤——这一步骤仅作用于 <code>Research/</code> 目录，不会触碰你手工撰写的笔记区域，以此规避误写风险。</p>
+<p><strong>起始资产</strong>：你目前拥有一个包含至少 20 篇笔记的 Obsidian Vault（积累了前 8 章的学习笔记即可），第 4 章部署的 Ollama 本地推理服务（<code>http://localhost:11434</code>），第 6 章通过 LightRAG 构建的图索引实体与关系数据，第 8 章的 MCP Server 和 LanceDB 向量库。</p>
+<p><strong>范围外</strong>：本章不讨论多用户协同编辑冲突、云端同步策略、Ollama 之外的其他推理引擎（如 LM Studio 或 vLLM），也不涉及生产级鉴权。</p>
+<hr>
+<h2 id="9-2-准备工作-让所有组件先跑起来">9.2 准备工作：让所有组件先跑起来</h2>
+<p>启动以下服务并逐一验证。每一条验证命令都要得到明确结果才能继续。</p>
+<p><strong>Python 环境与依赖</strong></p>
+<p>为了更好地管理依赖，请为本章创建独立的虚拟环境，并安装经测试的包版本：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">python3 -m venv venv-ch9
+source venv-ch9/bin/activate  # Windows 使用 venv-ch9\Scripts\activate
+pip install lancedb ragas==0.1.20 datasets requests pyyaml</code></pre></figure>
+<ul><li><code>ragas==0.1.20</code>：本章代码基于此版本编写，API 稳定（<code>from ragas import evaluate</code> 与 <code>from ragas.metrics import faithfulness, answer_relevancy, context_precision</code> 可直接使用）。如果后续 RAGAS 大版本变化，你可能需要查阅官方迁移指南。</li><li><code>requests</code>：所有与 Ollama 的通信都使用 HTTP API，不依赖任何 LangChain 封装，因此无需安装 <code>langchain-community</code>。</li><li><code>pyyaml</code>：Agent 写回笔记时需要生成 YAML Frontmatter。</li></ul>
+<p><strong>服务状态检查清单</strong>：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash"># 1. Ollama 服务
+curl http://localhost:11434/api/tags
+# 预期：返回 JSON 数组，包含已下载的模型列表
+
+# 2. LanceDB 索引存在性
+ls -la ~/obsidian-rag-data/lancedb/
+# 预期：列出 .lance 目录文件，非空
+
+# 3. MCP Server 连通性（在项目 venv 中执行）
+echo '{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/list&quot;,&quot;params&quot;:{}}' | python server.py
+# 预期：返回 tools 列表，包含 search_notes</code></pre></figure>
+<p>如果任一检查不通过，回到第 4 章或第 8 章补全对应组件。本章所有后续操作都依赖这三者同时在线。</p>
+<hr>
+<h2 id="9-3-切片一-用-ragas-给知识库打分">9.3 切片一：用 RAGAS 给知识库打分</h2>
+<h3 id="9-3-1-为什么要评估-先理解三个维度">9.3.1 为什么要评估？——先理解三个维度</h3>
+<p>你自己的检索系统能跑起来是一回事，它给出的答案“够不够好”是另一回事。RAGAS（Retrieval Augmented Generation Assessment）是专门衡量 RAG 系统质量的框架，它不依赖人工标注的“标准答案”，而是从三个维度进行量化：</p>
+<p><strong>忠实度（Faithfulness）</strong>：答案中的每一个断言，是否都能在检索到的上下文中找到依据？如果 LLM 凭空编了一个不存在于笔记中的概念，忠实度就会下降。</p>
+<p><em>可观察判据</em>：忠实度 1.0 意味着答案中每个事实陈述都对应上下文原文；0.5 意味着大约一半的陈述找不到出处。</p>
+<p><strong>答案相关性（Answer Relevance）</strong>：答案是否紧扣问题？一个很忠实但答非所问的回答——比如你问“RAFT 的前提是什么”，它忠实引用了你的 CAP 理论笔记——相关性会低。</p>
+<p><em>可观察判据</em>：相关性 1.0 意味着回答的所有段落都直接回应提问；0.3 意味着大量内容与问题无直接关联。</p>
+<p><strong>上下文精准度（Context Precision）</strong>：检索回来的上下文片段中，真正有用的比例有多高？如果召回了 5 个片段但只有 1 个相关，精准度只有 0.2。</p>
+<p><em>可观察判据</em>：精准度 1.0 意味着每个被召回的片段都是回答所需；低分意味着管道在“灌噪音”。</p>
+<p>三者构成了闭环：<strong>检索要精准，上下文要可用，生成要忠实且相关</strong>。任何一环短板都会影响最终体验。</p>
+<p>示例：一次真实打分</p>
+<p>假设你的知识库中有两篇笔记：《CAP 理论》和《数据库事务隔离级别》。评估工具提出一个问题：“什么是读已提交隔离级别？”检索器从 LanceDB 返回了三个上下文片段：</p>
+<ol><li>《数据库事务隔离级别》中关于读已提交的段落（真正相关）</li><li>《CAP 理论》中关于一致性的段落（部分重叠但非直接答案）</li><li>《数据库事务隔离级别》的另一段，讨论可重复读（不直接回答提问）</li></ol>
+<p>LLM 生成的答案包含了“读已提交允许事务读取其他事务已提交的数据”，这直接来源于片段 1；同时也提到了“一致性概念”，这部分来自片段 2，但与问题关联较弱。RAGAS 会计算出大约：忠实度 0.85（因为一致性部分确实在片段 2 中有依据），答案相关性 0.65（一致性部分拉低了聚焦度），上下文精准度 0.5（三个片段中只有第一个完全相关）。这个例子让你看到，即使答案部分正确，如果检索管道塞入了无关内容，整体得分仍会受损。</p>
+<p>反例：虚假的高相关性</p>
+<p>注意：答案相关性指标并非万能。如果 LLM 倾向于在每次回答中都加入大段与问题看似相关但实则空泛的总结（例如任何关于数据库的问题它都先写一段“数据库是存储数据的系统”），那么生成的答案变体在语义上仍会与原问题相近，导致相关性得分虚高。这种“安全话术”会掩盖模型实际并未深入回答具体问题的事实。避免的方法是在评估数据集中加入需要精确事实的问题，并检查低相关性条目是否符合直觉。如果直觉与分数矛盾，手动抽查 2-3 条生成的答案。</p>
+<h3 id="9-3-2-生成评估数据集">9.3.2 生成评估数据集</h3>
+<p>RAGAS 需要一组“问题—标准答案—上下文”三元组来运行。你不可能人工写几百条，这里采用策略：让 LLM 根据你的笔记内容自动生成评估问题。</p>
+<p>在项目目录中创建 <code>eval/generate_eval_set.py</code>：</p>
+<figure class="code-card"><div class="code-toolbar"><span>python</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="python">import json, os, re
+from pathlib import Path
+import requests
+
+VAULT_PATH = os.path.expanduser(&quot;~/Documents/Obsidian/Vault&quot;)
+OLLAMA_URL = &quot;http://localhost:11434/api/generate&quot;
+MODEL = &quot;qwen2.5:7b&quot;
+OUTPUT_FILE = &quot;eval_dataset.json&quot;
+
+def list_notes(vault: str, limit: int = 15) -&gt; list:
+    notes = []
+    for root, _, files in os.walk(vault):
+        for f in files:
+            if f.endswith(&quot;.md&quot;) and not root.endswith((&quot;.trash&quot;, &quot;.obsidian&quot;)):
+                path = Path(root) / f
+                notes.append({
+                    &quot;path&quot;: str(path),
+                    &quot;filename&quot;: f,
+                    &quot;content&quot;: path.read_text(encoding=&quot;utf-8&quot;)[:3000]
+                })
+    return notes[:limit]
+
+def generate_qa(note: dict) -&gt; list:
+    prompt = f&quot;&quot;&quot;你是 RAG 评估用例生成器。阅读以下笔记，生成 2 个问题和对应的标准答案。问题应该需要理解笔记内容才能回答。返回纯 JSON 数组，每个元素包含 question 和 answer。
+
+笔记文件名：{note['filename']}
+内容：
+{note['content'][:2000]}
+
+仅返回 JSON，无其他文字。&quot;&quot;&quot;
+    resp = requests.post(OLLAMA_URL, json={
+        &quot;model&quot;: MODEL, &quot;prompt&quot;: prompt, &quot;stream&quot;: False
+    })
+    text = resp.json()[&quot;response&quot;].strip()
+    # 提取 JSON 数组
+    match = re.search(r&quot;\[.*\]&quot;, text, re.DOTALL)
+    if match:
+        return json.loads(match.group(0))
+    return []
+
+all_qa = []
+for note in list_notes(VAULT_PATH):
+    qas = generate_qa(note)
+    for qa in qas:
+        qa[&quot;source_note&quot;] = note[&quot;filename&quot;]
+    all_qa.extend(qas)
+
+Path(OUTPUT_FILE).write_text(json.dumps(all_qa, ensure_ascii=False, indent=2), encoding=&quot;utf-8&quot;)
+print(f&quot;生成 {len(all_qa)} 条评估用例 → {OUTPUT_FILE}&quot;)</code></pre></figure>
+<p>运行后检查 <code>eval_dataset.json</code> 是否包含至少 20 条问题。每条应有 <code>question</code>、<code>answer</code> 字段——这是 RAGAS 的输入。</p>
+<p><strong>检验自动生成评估集的质量</strong></p>
+<p>你让 LLM 生成的问题和答案可能包含“免费信息”——问题本身已经暗示了答案，或者答案只是复述问题。这会虚高评估分数。例如，生成器看到《CAP 理论》笔记后可能产出：“什么是 CAP 理论？”这样的问题过于宽泛。理想的评估问题应要求组合多处信息，比如：“如果系统牺牲了一致性以换取可用性，它违反了 CAP 的哪条保证？”运行 <code>generate_eval_set.py</code> 后，打开 <code>eval_dataset.json</code>，随机选取 5 条，检查：</p>
+<ul><li>问题是否包含笔记关键词（如“CAP”）而无需检索即可回答？若是，应改写为需要跨段落推理的形式。</li><li>答案是否直接复制了笔记中的大段原文？若是，将其压缩为一句话摘要，以检验答案相关性指标的区分度。</li></ul>
+<p><strong>练习</strong>：手动修正上述 5 条中存在上述缺陷的用例，并记录你修改前后的差异。完成后再运行 9.3.3 的评估，观察三个指标的分数变化。这份练习让你理解：评估数据集的“难度”直接影响你对系统能力的判断。</p>
+<h3 id="9-3-3-运行-ragas-评估">9.3.3 运行 RAGAS 评估</h3>
+<p>确认已按照 9.2 节创建虚拟环境并安装 <code>ragas==0.1.20</code>、<code>datasets</code>、<code>requests</code>、<code>lancedb</code>。本章不再使用 LangChain 的任何封装，所有操作直接通过 HTTP API 和 LanceDB 原生接口完成，既简化依赖，也避免了不同库之间接口不一致的问题。</p>
+<p>创建 <code>eval/run_ragas.py</code>：</p>
+<figure class="code-card"><div class="code-toolbar"><span>python</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="python">import json, requests, os
+import lancedb
+from datasets import Dataset
+from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy, context_precision
+
+OLLAMA_EMBED = &quot;http://localhost:11434/api/embed&quot;
+OLLAMA_GENERATE = &quot;http://localhost:11434/api/generate&quot;
+MODEL = &quot;qwen2.5:7b&quot;
+EMBED_MODEL = &quot;nomic-embed-text&quot;
+LANCE_DIR = os.path.expanduser(&quot;~/obsidian-rag-data/lancedb&quot;)
+
+def get_embedding(text: str) -&gt; list:
+    &quot;&quot;&quot;调用本地 Ollama 嵌入服务，返回向量&quot;&quot;&quot;
+    resp = requests.post(OLLAMA_EMBED, json={
+        &quot;model&quot;: EMBED_MODEL, &quot;input&quot;: text
+    })
+    return resp.json()[&quot;embeddings&quot;][0]
+
+def search_lancedb(query: str, top_k: int = 3) -&gt; list:
+    &quot;&quot;&quot;用查询向量在 LanceDB 中检索最相似的笔记片段&quot;&quot;&quot;
+    db = lancedb.connect(LANCE_DIR)
+    table = db.open_table(&quot;notes&quot;)
+    q_emb = get_embedding(query)
+    results = table.search(q_emb).limit(top_k).to_list()
+    return [r[&quot;content&quot;] for r in results]
+
+def generate_answer(question: str, contexts: list) -&gt; str:
+    &quot;&quot;&quot;根据检索上下文生成答案&quot;&quot;&quot;
+    ctx_str = &quot;\n---\n&quot;.join(contexts)
+    prompt = (
+        &quot;根据以下上下文回答问题。如果上下文信息不足，请说明。\n\n&quot;
+        f&quot;上下文：\n{ctx_str}\n\n问题：{question}&quot;
+    )
+    resp = requests.post(OLLAMA_GENERATE, json={
+        &quot;model&quot;: MODEL, &quot;prompt&quot;: prompt, &quot;stream&quot;: False
+    })
+    return resp.json()[&quot;response&quot;].strip()
+
+# 1. 加载评估集
+with open(&quot;eval_dataset.json&quot;, &quot;r&quot;, encoding=&quot;utf-8&quot;) as f:
+    qa_pairs = json.load(f)
+
+# 2. 对每个问题检索上下文并生成答案
+questions, answers, contexts_list, ground_truths = [], [], [], []
+for qa in qa_pairs[:20]:   # 先测 20 条
+    ctx = search_lancedb(qa[&quot;question&quot;])
+    ans = generate_answer(qa[&quot;question&quot;], ctx)
+    questions.append(qa[&quot;question&quot;])
+    answers.append(ans)
+    contexts_list.append(ctx)
+    ground_truths.append(qa[&quot;answer&quot;])
+
+# 3. 构建 RAGAS 评估数据集
+ds = Dataset.from_dict({
+    &quot;question&quot;: questions,
+    &quot;answer&quot;: answers,
+    &quot;contexts&quot;: contexts_list,
+    &quot;ground_truth&quot;: ground_truths
+})
+
+# 4. 执行评估
+result = evaluate(ds, metrics=[faithfulness, answer_relevancy, context_precision])
+print(result)
+result.to_pandas().to_csv(&quot;ragas_report.csv&quot;, index=False, encoding=&quot;utf-8&quot;)
+print(&quot;报告已保存到 ragas_report.csv&quot;)</code></pre></figure>
+<p><strong>预期输出</strong>：终端打印三个指标的平均分，类似：</p>
+<figure class="code-card"><div class="code-toolbar"><span>text</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="text">{'faithfulness': 0.72, 'answer_relevancy': 0.68, 'context_precision': 0.55}</code></pre></figure>
+<p>这些分数的含义：忠实度 0.72 意味着约 72% 的答案断言有上下文支撑，剩余 28% 可能是幻觉；相关性 0.68 表示回答约有三分之一内容没有直接回应问题；精准度 0.55 说明检索到的上下文中近一半是噪音。</p>
+<p><strong>这是你的基线（Baseline）</strong>。记下这三个数字——经过 9.4 节维护后再跑一次，对比提升。</p>
+<p><strong>练习：检验评估集的敏感性</strong></p>
+<p><code>ground_truth</code> 字段在 RAGAS 中用于计算答案相关性（通过比较生成答案与标准答案的语义相似度），但有时它并不是精确的“标准答案”，而更接近一个参考摘要。为了理解它的影响，请手动打开 <code>eval_dataset.json</code>，选择 3 条记录，将其 <code>answer</code> 字段改写为明显错误的事实（比如把“读已提交”的解释改成“串行化”的定义），然后重新运行 <code>run_ragas.py</code>。观察答案相关性分数是否下降，忠实度是否受影响。这个实验会告诉你：如果自动生成的 ground_truth 本身质量不高，相关性分数的指向就会偏差，因为 RAGAS 把生成答案与可能不准确的 ground_truth 进行比较。因此，<strong>评估集本身也需要质量校验</strong>。理想情况下，应该随机抽查 10% 的自动生成问答对，人工确认其正确性后再纳入评估。</p>
+<p><strong>边界：评估集太小或太偏</strong></p>
+<p>如果你的知识库只有 15 篇笔记，且都集中在“分布式系统”一个主题，生成的 20 个问题可能会高度同质化。RAGAS 报告的平均分可能看起来很漂亮，但一旦遇到一个超出范围的问题，系统表现就会骤降。这是评估集覆盖度不足导致的“实验室高分”。弥补方法：在运行评估前，人工确认问题覆盖了知识库中至少 3 个不同的主题标签；若不足，可以手动补充几条跨领域问题，并自己写出 ground_truth。</p>
+<p><strong>边界：评估指标在本地小模型上的稳定性差异</strong></p>
+<p>RAGAS 默认使用 LLM 充当评估法官——即让一个模型去评判另一个模型生成的答案。在你的本地环境中，这个“法官”就是你本机的 <code>qwen2.5:7b</code>。7B 模型在评估一致性（如“第二段是否忠实于上下文”）上的判断力不如云端大模型稳定。如果你发现两次运行相同评估集得到的分数波动超过 0.1，这说明本地法官有随机性。此时，可信的做法是：抽取 5 条评估用例，人工对照上下文和答案逐条打分，并与 RAGAS 给出的分数对比。如果人工分数与 RAGAS 分数在 0.15 以内，本地法官基本可信；否则，你应该更多依赖人工抽检，而非单纯盯着 RAGAS 数字。</p>
+<hr>
+<h2 id="9-4-切片二-知识库健康诊断与防退化">9.4 切片二：知识库健康诊断与防退化</h2>
+<h3 id="9-4-1-三种常见的知识库腐化">9.4.1 三种常见的知识库腐化</h3>
+<p>回顾 9.3 的评估结果：如果上下文精准度低，说明向量检索在大量返回不相关内容。原因通常在三个方向：</p>
+<p><strong>向量漂移（Vector Drift）</strong>：当你反复更新一篇笔记，旧的 embedding 还在向量库中，新内容却对应了不同的向量表示。检索时新旧并行，返回互相矛盾或过时的上下文。</p>
+<p><strong>冗余积压</strong>：你新建一篇笔记时，可能把原笔记内容复制了一份。两个语义高度重叠的片段都进入向量库，检索时它们瓜分权重，挤占真正多样化的结果。</p>
+<p><strong>碎片化笔记</strong>：一篇笔记覆盖了三个不相关的主题，被切分成多个块后，每个块都携带了混合信号。当检索某个主题时，包含另一主题的块也被召回——噪音。</p>
+<p>可观察示例：验证向量漂移</p>
+<p>为了让你直观感受“漂移”，可以进行一个微实验。取一篇你经常修改的笔记，比如《分布式系统学习路线》。把它的当前内容复制到剪贴板，然后调用嵌入 API：</p>
+<figure class="code-card"><div class="code-toolbar"><span>python</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="python">import requests, json
+text_v1 = &quot;第一版内容：重点学习 Raft 和 Paxos。&quot;
+resp = requests.post(&quot;http://localhost:11434/api/embed&quot;, json={&quot;model&quot;:&quot;nomic-embed-text&quot;,&quot;input&quot;:text_v1})
+emb_v1 = resp.json()[&quot;embeddings&quot;][0]
+
+# 模拟修改后的第二版
+text_v2 = &quot;更新后的路线：深入 Raft，Paxos 作为历史了解，新增 Byzantine Fault Tolerance。&quot;
+resp = requests.post(&quot;http://localhost:11434/api/embed&quot;, json={&quot;model&quot;:&quot;nomic-embed-text&quot;,&quot;input&quot;:text_v2})
+emb_v2 = resp.json()[&quot;embeddings&quot;][0]
+
+# 计算余弦相似度
+dot = sum(a*b for a,b in zip(emb_v1, emb_v2))
+norm1 = (sum(a*a for a in emb_v1))**0.5
+norm2 = (sum(b*b for b in emb_v2))**0.5
+sim = dot / (norm1 * norm2)
+print(f&quot;版本间余弦相似度: {sim:.4f}&quot;)</code></pre></figure>
+<p>如果相似度低于 0.85，而向量库中仍存着 v1 的嵌入，那么当用户查询“Raft 与 Paxos 的关系”时，v1 和 v2 可能都被召回，但 v1 提供的上下文是过时的“重点学习”，与 v2 的“历史了解”产生矛盾。这就是漂移的微观机制。当篇数增多，这种矛盾片段会在检索结果中累积，导致上下文精准度下降。</p>
+<h3 id="9-4-2-维护脚本-检测冗余和孤立笔记">9.4.2 维护脚本：检测冗余和孤立笔记</h3>
+<p>创建 <code>maintenance/diagnose.py</code>：</p>
+<figure class="code-card"><div class="code-toolbar"><span>python</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="python">import os, json, hashlib
+from pathlib import Path
+from collections import defaultdict
+import requests
+
+VAULT = os.path.expanduser(&quot;~/Documents/Obsidian/Vault&quot;)
+OLLAMA_EMBED = &quot;http://localhost:11434/api/embed&quot;
+SIMILARITY_THRESHOLD = 0.85
+
+def get_embedding(text: str) -&gt; list:
+    resp = requests.post(OLLAMA_EMBED, json={
+        &quot;model&quot;: &quot;nomic-embed-text&quot;, &quot;input&quot;: text[:2000]
+    })
+    return resp.json()[&quot;embeddings&quot;][0]
+
+def cosine_sim(a, b):
+    dot = sum(x*y for x,y in zip(a,b))
+    norm_a = sum(x*x for x in a)**0.5
+    norm_b = sum(x*x for x in b)**0.5
+    return dot / (norm_a * norm_b) if norm_a and norm_b else 0
+
+# 1. 扫描所有笔记
+notes = []
+for root, dirs, files in os.walk(VAULT):
+    dirs[:] = [d for d in dirs if d not in ('.obsidian', '.trash')]
+    for f in files:
+        if f.endswith(&quot;.md&quot;):
+            path = Path(root) / f
+            content = path.read_text(encoding=&quot;utf-8&quot;)
+            notes.append({
+                &quot;path&quot;: str(path), &quot;filename&quot;: f,
+                &quot;content&quot;: content, &quot;size&quot;: len(content)
+            })
+
+print(f&quot;扫描到 {len(notes)} 篇笔记&quot;)
+
+# 2. 检测冗余对（内容高度相似）
+similar_pairs = []
+embeddings = {}
+for note in notes:
+    emb = get_embedding(note[&quot;content&quot;])
+    embeddings[note[&quot;path&quot;]] = emb
+
+checked = set()
+for n1 in notes:
+    for n2 in notes:
+        if n1[&quot;path&quot;] == n2[&quot;path&quot;]: continue
+        pair_key = tuple(sorted([n1[&quot;path&quot;], n2[&quot;path&quot;]]))
+        if pair_key in checked: continue
+        checked.add(pair_key)
+        sim = cosine_sim(embeddings[n1[&quot;path&quot;]], embeddings[n2[&quot;path&quot;]])
+        if sim &gt; SIMILARITY_THRESHOLD:
+            similar_pairs.append({&quot;note_a&quot;: n1[&quot;filename&quot;], &quot;note_b&quot;: n2[&quot;filename&quot;], &quot;similarity&quot;: round(sim, 3)})
+
+print(f&quot;\n发现 {len(similar_pairs)} 对高度相似笔记：&quot;)
+for p in similar_pairs:
+    print(f&quot;  {p['note_a']} ↔ {p['note_b']} (相似度 {p['similarity']})&quot;)
+
+# 3. 检测孤立笔记（无双链、无反向链接的笔记）
+# 简化版：检查内容中是否包含 [[
+isolated = []
+for note in notes:
+    has_wikilink = &quot;[[&quot; in note[&quot;content&quot;]
+    if not has_wikilink:
+        isolated.append(note[&quot;filename&quot;])
+
+print(f&quot;\n发现 {len(isolated)} 篇无 [[双链]] 的孤立笔记：&quot;)
+for f in isolated:
+    print(f&quot;  {f}&quot;)</code></pre></figure>
+<p>运行并观察：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">python maintenance/diagnose.py</code></pre></figure>
+<p>预期输出解读：</p>
+<ul><li>相似度 &gt; 0.85 的笔记对意味着你很可能在不同时间记录了相同内容，应合并或删除其中一篇</li><li>孤立笔记不一定需要删除（有些笔记本身就是独立概念），但它是图谱中的“孤岛”，AI 无法通过双链跳转发现它</li></ul>
+<p>处理动作（需手动确认）：</p>
+<ol><li>对高相似笔记对，检查内容，保留更完整的一篇，在另一篇中添加 <code>aliases:</code> 指向保留笔记，并移动至 <code>.archive</code> 目录</li><li>对孤立笔记，判断是否应该添加至少一条双链，或者在 Frontmatter 标记 <code>status: reference</code>（表示独立参考资料）</li></ol>
+<p><strong>练习：调节阈值理解精度与召回</strong></p>
+<p><code>SIMILARITY_THRESHOLD</code> 决定了脚本会将多相似的笔记对视为“冗余”。试着将它从 0.85 逐渐降低到 0.75，再提高到 0.95，每次运行 <code>diagnose.py</code> 并记录发现的冗余对数量。你会发现，较低的阈值会捕捉到更多“可能相似”的笔记（高召回），但其中包含更多只是同一主题但不同角度的笔记（低精度）。较高的阈值则只标记几乎完全相同的笔记，可能漏掉那些换了表述但核心内容重复的笔记。你的任务不是找到一个“魔法数字”，而是理解：<strong>维护脚本的阈值必须根据知识库的主题聚合度手工校准</strong>。一个策略是：先用 0.85 跑一次，对结果做人工确认后，将确认的冗余对作为标准，反推一个使精度和召回平衡的阈值。</p>
+<h3 id="对嵌入-api-的速率限制保持警惕">对嵌入 API 的速率限制保持警惕</h3>
+<p><code>diagnose.py</code> 会为每篇笔记调用一次 <code>/api/embed</code>，在笔记数量超过 50 篇时，连续无间隔请求可能触发 Ollama 的内置排队或超时。如果你的知识库较大，可在 <code>for note in notes:</code> 循环中加入 <code>time.sleep(0.5)</code>，并观察 Ollama 服务日志（通常位于 <code>~/.ollama/logs/server.log</code>）确认无 429 或超时错误。此限制同样适用于 <code>sync_vector.py</code> 的重建索引操作，忽略它会导致部分笔记嵌入丢失，而脚本不会报错。</p>
+<h3 id="9-4-3-增量重索引-解决向量漂移">9.4.3 增量重索引：解决向量漂移</h3>
+<p>维护脚本只诊断不治疗。真正的“治疗”是让向量库与 Markdown 源文件重新对齐：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash"># 方案：删除旧索引并根据现有文件全量重建
+python sync_vector.py --full-reindex</code></pre></figure>
+<p>这条命令是第 8 章 <code>sync_vector.py</code> 的扩展调用（请在同步脚本中添加 <code>--full-reindex</code> 标志，逻辑为：清空 LanceDB 表，重新遍历 VAULT 目录执行 embed + insert）。重建后再次运行 9.3.3 的 <code>run_ragas.py</code>，观察精准度变化。</p>
+<p><strong>可观察判据</strong>：精准度提升超过 0.1 则说明原向量库存在严重漂移。</p>
+<p><strong>边界：全量重建的潜在陷阱</strong></p>
+<p>在笔记数量超过 200 篇时，<code>--full-reindex</code> 会依次对每篇笔记调用嵌入 API。这不仅耗时，还可能触发 Ollama 的并发限制（如果未来你并行化了该脚本）。更隐蔽的问题：如果重建过程中你有新笔记写入，或者某篇 .md 文件在读取时被其他进程短暂锁定，部分笔记可能被跳过而没有报错，导致索引不完整。<strong>防御措施</strong>：重建前，先确保 Obsidian 已完全关闭（或至少没有正在编辑的笔记），重建完成后立即用 <code>ls -l</code> 核对 LanceDB 表中的记录数与 Vault 中的 .md 文件数相差不超过 2（允许 Frontmatter 空白行差异）。如果你的知识库已经很大，可以考虑先按目录分区重建，而非一次性全量操作。</p>
+<hr>
+<h2 id="9-5-切片三-agentic-闭环-让知识库自己写笔记">9.5 切片三：Agentic 闭环——让知识库自己写笔记</h2>
+<h3 id="9-5-1-闭环设计">9.5.1 闭环设计</h3>
+<p>一条完整的 Agentic 流水线有四个阶段，每个阶段都对应明确的输入输出和验证点：</p>
+<figure class="code-card"><div class="code-toolbar"><span>text</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="text">[用户提问] → ①检索 → ②生成草稿 → ③结构化解析 → ④写回Obsidian
+                  ↑                                                  |
+                  └────────── 更新索引 ← 新笔记 ← 写回双链/Tag ←──────┘</code></pre></figure>
+<p><strong>阶段职责</strong>：</p>
+<div class="table-wrap"><table><thead><tr><th>阶段</th><th>输入</th><th>输出</th><th>负责组件</th></tr></thead><tbody><tr><td>①检索</td><td>用户课题（如“分布式系统共识算法的演进”）</td><td>Top-5 笔记片段 + 图谱邻居节点</td><td>LanceDB + MCP search_notes</td></tr><tr><td>②生成</td><td>检索上下文 + 课题</td><td>Markdown 格式的结构化草稿（含标题、正文、参考笔记的双链）</td><td>Ollama LLM</td></tr><tr><td>③解析</td><td>LLM 生成的 Markdown 字符串</td><td>结构化字段：标题、正文、tags、references（要链接的笔记名列表）</td><td>Python 正则 + Frontmatter 解析</td></tr><tr><td>④写回</td><td>解析后的结构化字段</td><td>新的 <code>.md</code> 文件，包含 YAML Frontmatter、正文、双链</td><td>Python 文件写入</td></tr></tbody></table></div>
+<p><strong>设计决策：为什么不使用 LangChain Agent</strong></p>
+<p>你可能注意到我们直接编写了函数式流水线，而未使用 LangChain 的 Agent 框架。这是刻意选择：Agent 框架的优势在于工具调用和推理循环，但这个闭环的主要操作——检索、生成、解析、写文件——都是确定性的步骤，不需要 LLM 在运行时决定调用哪个工具。用简单的函数串联，每步的输入输出都可以轻易打印和调试；而引入 Agent 循环会引入额外的延迟和不确定性（例如 LLM 可能错误地选择不调用搜索工具）。当你的闭环未来需要动态决策（例如“如果检索结果不足，自动调整查询词重试”），那时再考虑引入 Agent 模式会更有效。</p>
+<p><strong>写回的安全边界设计</strong></p>
+<p>第 8 章的 MCP Server 是只读的，这是有意为之——暴露写入能力而未加控制，意味着外部工具可以删除你的笔记。本章的 <code>write_note</code> 步骤在打破只读限制的同时，施加了严格的安全约束：写入路径硬编码为 <code>VAULT/Research/</code> 子目录，绝不触碰 vault 其他位置。这意味着 Agent 创建的所有笔记都集中在 <code>Research/</code> 下，即便发生误写或覆盖，你的手工笔记仍然安全。同时，每条自动生成的笔记都标记了 <code>auto_generated: true</code>，方便你后续按 Frontmatter 字段批量过滤和审核。</p>
+<p>可观察示例：在终端中跟踪一次闭环的完整信号流</p>
+<p>在运行 <code>research_agent.py</code> 时，观察控制台打印的每一步结果。一次典型的执行会显示：<code>[1/4]</code> 输出 5 篇笔记的文件名，其中第一和第三篇直接相关，第二篇仅在“分布式系统”词面上相似但内容偏存储；<code>[2/4]</code> 生成的 Markdown 草稿第一段引用了第一篇笔记的双链；<code>[3/4]</code> 标签列表中包含“共识算法”“Paxos”“Raft”；<code>[4/4]</code> 文件路径明显指向 Research 子目录。如果第二步的草稿中出现 <code>[[分布式文件系统]]</code> 这样的无关双链，说明检索返回的第二篇笔记噪声被模型采用了。此时你可以回到 9.4.3 考虑重建索引，或者在 <code>generate_draft</code> 的提示中增加“仅引用与主题直接相关的笔记”来强化指令。</p>
+<h3 id="9-5-2-构建-agent-主脚本">9.5.2 构建 Agent 主脚本</h3>
+<p>创建 <code>agent/research_agent.py</code>：</p>
+<figure class="code-card"><div class="code-toolbar"><span>python</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="python">import os, json, re, yaml
+from pathlib import Path
+from datetime import datetime
+import requests
+import lancedb
+
+VAULT = os.path.expanduser(&quot;~/Documents/Obsidian/Vault&quot;)
+LANCE_DIR = os.path.expanduser(&quot;~/obsidian-rag-data/lancedb&quot;)
+OLLAMA_URL = &quot;http://localhost:11434/api/generate&quot;
+OLLAMA_EMBED = &quot;http://localhost:11434/api/embed&quot;
+MODEL = &quot;qwen2.5:7b&quot;
+EMBED_MODEL = &quot;nomic-embed-text&quot;
+
+def search_notes(query: str, top_k: int = 5) -&gt; list:
+    &quot;&quot;&quot;直接用 LanceDB 原生检索，返回笔记片段列表&quot;&quot;&quot;
+    db = lancedb.connect(LANCE_DIR)
+    table = db.open_table(&quot;notes&quot;)
+    resp = requests.post(OLLAMA_EMBED, json={&quot;model&quot;: EMBED_MODEL, &quot;input&quot;: query})
+    q_emb = resp.json()[&quot;embeddings&quot;][0]
+    results = table.search(q_emb).limit(top_k).to_list()
+    return [{&quot;filename&quot;: r[&quot;filename&quot;], &quot;content&quot;: r[&quot;content&quot;], &quot;path&quot;: r[&quot;path&quot;]} for r in results]
+
+def generate_draft(topic: str, contexts: list) -&gt; str:
+    ctx_text = &quot;\n\n---\n\n&quot;.join([f&quot;来源：[[{c['filename'].replace('.md','')}]]\n{c['content'][:800]}&quot; for c in contexts])
+    prompt = f&quot;&quot;&quot;你是知识库的自动研究助手。用户提出课题，你需要综合以下笔记上下文，生成一篇结构化的知识库笔记草稿。
+
+要求：
+1. 用一级标题 `# 课题名`
+2. 正文分节使用 `## 小节标题`
+3. 在正文中自然引用相关笔记，使用 Obsidian 双链语法 `[[笔记名]]`
+4. 结尾列出 `## 参考` 小节，用列表列出所有参考笔记的双链
+5. 返回纯 Markdown，不要额外解释
+
+课题：{topic}
+
+上下文（共 {len(contexts)} 篇相关笔记）：
+{ctx_text}&quot;&quot;&quot;
+    
+    resp = requests.post(OLLAMA_URL, json={
+        &quot;model&quot;: MODEL, &quot;prompt&quot;: prompt, &quot;stream&quot;: False,
+        &quot;options&quot;: {&quot;temperature&quot;: 0.7, &quot;num_predict&quot;: 2000}
+    })
+    return resp.json()[&quot;response&quot;].strip()
+
+def parse_draft(markdown: str) -&gt; dict:
+    &quot;&quot;&quot;解析 LLM 生成的草稿，提取元数据&quot;&quot;&quot;
+    title_match = re.search(r&quot;^#\s+(.+)$&quot;, markdown, re.MULTILINE)
+    title = title_match.group(1).strip() if title_match else &quot;未命名课题&quot;
+    
+    # 提取所有 [[双链]]
+    wikilinks = re.findall(r&quot;\[\[([^\]]+)\]\]&quot;, markdown)
+    # 去重
+    unique_refs = list(dict.fromkeys(wikilinks))
+    
+    # 尝试提取已有的 tags（如果 LLM 生成了）
+    tag_match = re.search(r&quot;tags:\s*\[([^\]]*)\]&quot;, markdown)
+    existing_tags = [t.strip() for t in tag_match.group(1).split(&quot;,&quot;)] if tag_match else []
+    
+    # 自动根据课题关键词生成 tags
+    auto_tags = [w.lower() for w in re.findall(r&quot;[\u4e00-\u9fff\w]+&quot;, title) if len(w) &gt; 2][:3]
+    all_tags = list(set(existing_tags + auto_tags))
+    
+    return {
+        &quot;title&quot;: title,
+        &quot;content&quot;: markdown,
+        &quot;references&quot;: unique_refs,
+        &quot;tags&quot;: all_tags
+    }
+
+def write_note(parsed: dict) -&gt; str:
+    &quot;&quot;&quot;在 Obsidian Vault 中创建新笔记&quot;&quot;&quot;
+    # 安全文件名
+    safe_name = re.sub(r'[\\/:*?&quot;&lt;&gt;|]', '-', parsed[&quot;title&quot;])
+    note_path = Path(VAULT) / &quot;Research&quot; / f&quot;{safe_name}.md&quot;
+    note_path.parent.mkdir(exist_ok=True)
+    
+    # 文件名冲突检查：若已存在则追加时间戳
+    if note_path.exists():
+        timestamp = datetime.now().strftime(&quot;%Y%m%d-%H%M%S&quot;)
+        note_path = note_path.with_stem(f&quot;{safe_name}-{timestamp}&quot;)
+    
+    # 构建带 Frontmatter 的笔记
+    frontmatter = {
+        &quot;title&quot;: parsed[&quot;title&quot;],
+        &quot;tags&quot;: parsed[&quot;tags&quot;],
+        &quot;created&quot;: datetime.now().strftime(&quot;%Y-%m-%d %H:%M&quot;),
+        &quot;type&quot;: &quot;research-note&quot;,
+        &quot;auto_generated&quot;: True
+    }
+    
+    full_content = f&quot;---\n{yaml.dump(frontmatter, allow_unicode=True, sort_keys=False)}---\n\n{parsed['content']}&quot;
+    note_path.write_text(full_content, encoding=&quot;utf-8&quot;)
+    return str(note_path)
+
+def agentic_research(topic: str):
+    &quot;&quot;&quot;主闭环流程&quot;&quot;&quot;
+    print(f&quot;[1/4] 检索相关笔记...&quot;)
+    contexts = search_notes(topic)
+    print(f&quot;  找到 {len(contexts)} 篇相关笔记&quot;)
+    for c in contexts:
+        print(f&quot;    - {c['filename']}&quot;)
+    
+    print(f&quot;[2/4] 生成研究草稿...&quot;)
+    draft = generate_draft(topic, contexts)
+    print(f&quot;  草稿长度: {len(draft)} 字符&quot;)
+    
+    print(f&quot;[3/4] 解析草稿结构...&quot;)
+    parsed = parse_draft(draft)
+    print(f&quot;  标题: {parsed['title']}&quot;)
+    print(f&quot;  标签: {parsed['tags']}&quot;)
+    print(f&quot;  引用笔记: {parsed['references']}&quot;)
+    
+    print(f&quot;[4/4] 写入 Obsidian...&quot;)
+    path = write_note(parsed)
+    print(f&quot;  新笔记已创建: {path}&quot;)
+    
+    return parsed
+
+if __name__ == &quot;__main__&quot;:
+    topic = input(&quot;请输入研究课题: &quot;).strip()
+    if topic:
+        agentic_research(topic)</code></pre></figure>
+<p><strong>处理超长笔记生成时的嵌入分块</strong></p>
+<p>当 Agent 生成的草稿超过 2000 字时，全文嵌入可能超出 <code>nomic-embed-text</code> 模型的上下文窗口（虽然该模型支持较长输入，但质量会随文本增长而衰减）。后续运行 <code>sync_vector.py</code> 同步新笔记时，如果同步脚本仍使用段落切分（按 <code>\n\n</code> 分割），长草稿会被自动切割为多个块，每块独立获得嵌入，对检索质量没有负面影响。但如果你需要将整篇草稿作为一句话嵌入（例如用于笔记间相似度计算），建议对超过 500 字的文本先提取摘要再嵌入，而非直接对整个文本向量化。这是向量检索的普遍限制：整篇嵌入会稀释核心语义，并非 Agent 独有的问题。</p>
+<h3 id="9-5-3-首次运行与验证">9.5.3 首次运行与验证</h3>
+<p>确保 Ollama 和 LanceDB 都在运行状态后：</p>
+<figure class="code-card"><div class="code-toolbar"><span>bash</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="bash">python agent/research_agent.py</code></pre></figure>
+<p>输入课题：<code>分布式系统共识算法的演进</code></p>
+<p><strong>观察四步输出</strong>：</p>
+<ol><li><code>[1/4]</code> 应列出 5 篇相关笔记名——如果全是无关笔记，回到 9.4.3 重建索引</li><li><code>[2/4]</code> 草稿长度应 &gt; 1000 字符——不足则模型可能 token 限制过低，调整 <code>num_predict</code></li><li><code>[3/4]</code> 应提取到 3 个以上 <code>tags</code> 和至少 2 个 <code>[[双链]]</code></li><li><code>[4/4]</code> 路径应指向 <code>~/Documents/Obsidian/Vault/Research/</code> 下的新 <code>.md</code> 文件</li></ol>
+<p><strong>在 Obsidian 中验证</strong>：</p>
+<ul><li>打开 Obsidian，确认新笔记出现在文件列表</li><li>切换到图谱视图（Ctrl+G），观察新节点是否连接到引用的笔记</li><li>打开新笔记，检查 Frontmatter 的 <code>tags</code> 和正文中的 <code>[[双链]]</code> 是否可点击</li></ul>
+<p><strong>边界与失败模式</strong></p>
+<p>Agent 可能遇到几种常见失效，需要提前防范：</p>
+<ul><li><strong>检索结果为空</strong>：如果课题与知识库完全无关（如“古罗马引水渠”），<code>search_notes</code> 仍会返回余弦相似度最高的 5 条记录，但这些内容几乎不相关。生成的草稿可能凭空编造，或直接复制不相关笔记的段落并强行附会。<strong>应对</strong>：你已在 <code>generate_draft</code> 的提示中要求“如果上下文信息不足，请说明”，但 7B 模型并不总是遵守。更可靠的方案是在解析阶段检查 <code>references</code> 的数量：如果引用的笔记数量为 0，则在 Frontmatter 中添加 <code>quality: low</code> 标记，提醒自己后续人工审核。</li></ul>
+<ul><li><strong>LLM 输出非 Markdown</strong>：有时模型会返回带前言或结语的文字，而不是纯 Markdown。<code>parse_draft</code> 用正则提取标题和双链，但可能遗漏格式混乱的情况。如果 <code>title</code> 是“未命名课题”，说明解析失败，应打印草稿全文并手动检查。</li></ul>
+<ul><li><strong>文件名冲突</strong>：如果 <code>写回</code> 步骤发现目标路径已存在同名文件，当前实现会在文件名后追加时间戳，而非覆盖已有笔记。这意味着你不会丢失之前的笔记，但可能在 <code>Research/</code> 目录下产生同一课题的多个版本。你应当定期检查该目录，合并或归档旧版本。</li></ul>
+<ul><li><strong>本地模型幻觉加剧</strong>：7B 模型在生成长草稿时容易在中间段落开始重复短语或编造引用。如果你发现 <code>references</code> 列表中包含知识库中不存在的笔记名（例如模型自己编了一个 <code>[[某虚构论文]]</code>），你需要增加后处理：检查每个 <code>reference</code> 对应的 .md 文件是否存在，删除无效引用。</li></ul>
+<p><strong>练习：极端输入测试</strong></p>
+<p>尝试输入一个极短的课题，比如“AI”，然后观察草稿的质量。随后输入一个非常具体但本地知识库不太可能覆盖的课题，如“F1 赛车空气动力学”。比较两次检索返回的上下文内容、草稿的相关性和引用的有效性。这个练习的价值在于让你感受：Agent 的表现高度依赖检索质量，而检索质量又依赖于知识库的覆盖度。当知识库在某领域薄弱时，Agent 并不会“承认无知”，而是会尽力拼凑——这是当前技术的边界。</p>
+<h3 id="9-5-4-迭代改进-第二种闭环模式">9.5.4 迭代改进：第二种闭环模式</h3>
+<p>以上是可手动触发的“拉取式”闭环。你还可以配置 <strong>定时自动巡检</strong>——每天凌晨让 Agent 扫描最近修改的笔记，发现孤立笔记后自动生成“建议链接”并写入一条待办。</p>
+<p>在 <code>agent/</code> 下创建 <code>auto_curator.py</code>（核心逻辑片段）：</p>
+<figure class="code-card"><div class="code-toolbar"><span>python</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="python"># 伪代码结构
+def daily_curation():
+    recent_notes = scan_recently_modified(hours=24)
+    for note in recent_notes:
+        if is_isolated(note):  # 无双链
+            related = search_notes(extract_keywords(note))
+            suggestions = [f&quot;[[{r['filename'].replace('.md','')}]]&quot; for r in related[:3]]
+            # 在笔记底部追加待办
+            append_to_note(note, f&quot;\n\n&gt; [!todo] 建议链接\n&gt; {', '.join(suggestions)}&quot;)</code></pre></figure>
+<p>这个模式的停止条件：所有最近修改的笔记都至少包含一条双链或明确的“无需链接”标记（如 Frontmatter <code>link_status: standalone</code>）。本章不展开完整实现，但你应该能基于 9.5.2 的组件拼接出来。</p>
+<hr>
+<h2 id="9-6-项目收束-验收-复盘与独立挑战">9.6 项目收束：验收、复盘与独立挑战</h2>
+<h3 id="9-6-1-完整验收清单">9.6.1 完整验收清单</h3>
+<p>按顺序执行以下检查，每项通过后打勾：</p>
+<ul><li>[ ] <strong>评估基线</strong>：<code>ragas_report.csv</code> 存在且包含 ≥ 20 行的 faithfulness / answer_relevancy / context_precision 分数</li><li>[ ] <strong>维护诊断</strong>：<code>diagnosis.py</code> 运行后输出了相似笔记对和孤立笔记列表</li><li>[ ] <strong>重建索引</strong>：全量 reindex 后，上下文精准度比基线提升 &gt; 0.05</li><li>[ ] <strong>闭环运行</strong>：输入任意课题后，Obsidian 中生成新笔记，包含可点击双链和 Frontmatter tags</li><li>[ ] <strong>图谱连通性</strong>：新节点在 Obsidian 图谱中至少连接到一个已有节点</li><li>[ ] <strong>错误处理</strong>：故意输入一个与知识库完全不相关的课题（如“古罗马水道工程”），Agent 应生成草稿但明确标记 <code>auto_generated: true</code> 并在正文说明“知识库中未找到相关笔记”</li></ul>
+<h3 id="9-6-2-独立任务-故障修复">9.6.2 独立任务：故障修复</h3>
+<p>你不需要逐行指令。这里给出一个预设的故障场景：</p>
+<p><strong>场景</strong>：你运行 <code>research_agent.py</code> 两周后，发现新生成的笔记质量下降——生成的草稿开始重复使用同一篇笔记作为唯一来源，其他 4 个检索结果被忽略。同时，向量检索日志显示 <code>search_notes</code> 返回的 Top-5 中有 3 条是高度相似的冗余笔记。</p>
+<p><strong>你的任务</strong>：</p>
+<ol><li>诊断问题根因（提示：回顾 9.4.1 的三种腐化类型）</li><li>提出修复方案</li><li>实施修复，重新运行 Agent，比较修复前后的草稿引用多样性</li></ol>
+<p><strong>验收标准</strong>：修复后生成的草稿至少引用 2 篇不同的源笔记。</p>
+<p><strong>练习：撰写诊断报告</strong></p>
+<p>完成上述修复后，请写一段 200-300 字的诊断报告，记录以下三件事：（1）你是通过什么观察（日志、分数、文件内容）定位到根因的；（2）你采取了什么具体修复动作（删除冗余、重建索引、手动合并笔记等）；（3）修复后的证据是什么（比如 <code>ragas_report.csv</code> 中精准度从 0.55 提升到 0.68，或草稿中不同引用数由 1 变为 3）。这份报告就是你自己知识库的健康档案，下次遇到类似退化时，它能帮你更快定位。</p>
+<h3 id="9-6-3-课程总结-你建成的是什么">9.6.3 课程总结：你建成的是什么</h3>
+<p>从第 1 章到第 9 章，你不只是在学工具。你建造的是一套分层的知识工程系统：</p>
+<figure class="code-card"><div class="code-toolbar"><span>text</span><button class="copy-code" type="button">复制</button></div><pre><code data-language="text">应用层：Obsidian 笔记界面 + 3D 图谱可视化
+     ↓
+集成层：MCP Server → Cursor / Claude Code
+     ↓
+智能层：RAGAS 评估 → Agentic 闭环
+     ↓
+检索层：混合检索(BM25+向量) + GraphRAG 多跳推理
+     ↓
+存储层：Markdown 源文件 + LanceDB 向量索引 + Ollama 本地推理</code></pre></figure>
+<p>这套系统的每一次运行都会产生可观测的证据——分数、文件、图谱节点。你可以用 RAGAS 分数驱动优化，而非凭感觉判断。</p>
+<p><strong>三条后续进化方向</strong>（本章不实现，但你应该知道可以往哪走）：</p>
+<ol><li><strong>多模态</strong>：让 Agent 能检索图片和 PDF，结合 OCR 和视觉模型</li><li><strong>协作过滤</strong>：如果你和其他人共享知识库，引入协同过滤推荐“别人在你当前笔记下常读的下一篇”</li><li><strong>微调闭环</strong>：收集 Agent 生成草稿后你的修改记录，作为偏好数据微调本地模型，让未来的草稿更贴合你的写作风格</li></ol>
+<hr>
+<h2 id="9-7-常见问题与恢复">9.7 常见问题与恢复</h2>
+<div class="table-wrap"><table><thead><tr><th>症状</th><th>可能原因</th><th>恢复方式</th></tr></thead><tbody><tr><td><code>search_notes</code> 返回空结果</td><td>LanceDB 表不存在或路径错误</td><td>运行 <code>sync_vector.py --full-reindex</code></td></tr><tr><td>草稿生成超时</td><td>Ollama 模型过大或 <code>num_predict</code> 过高</td><td>调低 <code>num_predict</code> 至 1500，或换用 <code>qwen2.5:3b</code></td></tr><tr><td>新笔记 Frontmatter 乱码</td><td>LLM 输出的 YAML 不符合规范</td><td>在 <code>parse_draft</code> 中增加 YAML 校验，失败时使用默认值</td></tr><tr><td>评估分数始终低于 0.5</td><td>知识库笔记数量或质量不足</td><td>优先增加 10 篇以上原子化笔记（回顾第 2 章）</td></tr><tr><td>Agent 创建了重复笔记</td><td>已有同名笔记但未检查</td><td><code>write_note</code> 已内置冲突检测，自动追加时间戳</td></tr></tbody></table></div>
+<hr>
+<p>Agentic 闭环让知识库能自动诊断和生成笔记。一开始效果可能不够理想，但反复运行诊断和重建索引会持续改进——迭代比一次搭建重要得多。</p>
+<hr>
+<h2 id="参考文献">参考文献</h2>
+<ul><li>RAGAS: Evaluation framework for RAG systems. <a href="https://docs.ragas.io/" target="_blank" rel="noreferrer">https://docs.ragas.io/</a> — 支撑 9.3 节的评估维度定义和 API 调用方式</li><li>Ollama API Documentation: OpenAI Compatibility. <a href="https://docs.ollama.com/api/openai-compatibility" target="_blank" rel="noreferrer">https://docs.ollama.com/api/openai-compatibility</a> — 支撑 9.3-9.5 节点的本地模型调用</li><li>LanceDB Python API. <a href="https://lancedb.github.io/lancedb/" target="_blank" rel="noreferrer">https://lancedb.github.io/lancedb/</a> — 支撑向量检索的 <code>search()</code> 方法调用</li><li>Obsidian Developer Documentation: Vault API. <a href="https://docs.obsidian.md/" target="_blank" rel="noreferrer">https://docs.obsidian.md/</a> — 支撑 Markdown 文件操作和双链语法的正确性</li></ul><nav class="lesson-nav"><a href="../lessons/08-mcp.html">← 第 8 章<br><strong>开发者扩展——基于 MCP 与外部生态联动</strong></a><a href="../index.html">返回课程目录 →</a></nav></main><aside class="toc"><strong>本章目录</strong><a class="" href="#9-0-本章前置-你应当已经熟悉的概念与组件"><span class="toc-num">1</span>9.0 本章前置：你应当已经熟悉的概念与组件</a><a class="" href="#9-1-交付契约-这章到底要造什么"><span class="toc-num">2</span>9.1 交付契约：这章到底要造什么</a><a class="" href="#9-2-准备工作-让所有组件先跑起来"><span class="toc-num">3</span>9.2 准备工作：让所有组件先跑起来</a><a class="" href="#9-3-切片一-用-ragas-给知识库打分"><span class="toc-num">4</span>9.3 切片一：用 RAGAS 给知识库打分</a><a class="sub" href="#9-3-1-为什么要评估-先理解三个维度"><span class="toc-num">4.1</span>9.3.1 为什么要评估？——先理解三个维度</a><a class="sub" href="#9-3-2-生成评估数据集"><span class="toc-num">4.2</span>9.3.2 生成评估数据集</a><a class="sub" href="#9-3-3-运行-ragas-评估"><span class="toc-num">4.3</span>9.3.3 运行 RAGAS 评估</a><a class="" href="#9-4-切片二-知识库健康诊断与防退化"><span class="toc-num">5</span>9.4 切片二：知识库健康诊断与防退化</a><a class="sub" href="#9-4-1-三种常见的知识库腐化"><span class="toc-num">5.1</span>9.4.1 三种常见的知识库腐化</a><a class="sub" href="#9-4-2-维护脚本-检测冗余和孤立笔记"><span class="toc-num">5.2</span>9.4.2 维护脚本：检测冗余和孤立笔记</a><a class="sub" href="#对嵌入-api-的速率限制保持警惕"><span class="toc-num">5.3</span>对嵌入 API 的速率限制保持警惕</a><a class="sub" href="#9-4-3-增量重索引-解决向量漂移"><span class="toc-num">5.4</span>9.4.3 增量重索引：解决向量漂移</a><a class="" href="#9-5-切片三-agentic-闭环-让知识库自己写笔记"><span class="toc-num">6</span>9.5 切片三：Agentic 闭环——让知识库自己写笔记</a><a class="sub" href="#9-5-1-闭环设计"><span class="toc-num">6.1</span>9.5.1 闭环设计</a><a class="sub" href="#9-5-2-构建-agent-主脚本"><span class="toc-num">6.2</span>9.5.2 构建 Agent 主脚本</a><a class="sub" href="#9-5-3-首次运行与验证"><span class="toc-num">6.3</span>9.5.3 首次运行与验证</a><a class="sub" href="#9-5-4-迭代改进-第二种闭环模式"><span class="toc-num">6.4</span>9.5.4 迭代改进：第二种闭环模式</a><a class="" href="#9-6-项目收束-验收-复盘与独立挑战"><span class="toc-num">7</span>9.6 项目收束：验收、复盘与独立挑战</a><a class="sub" href="#9-6-1-完整验收清单"><span class="toc-num">7.1</span>9.6.1 完整验收清单</a><a class="sub" href="#9-6-2-独立任务-故障修复"><span class="toc-num">7.2</span>9.6.2 独立任务：故障修复</a><a class="sub" href="#9-6-3-课程总结-你建成的是什么"><span class="toc-num">7.3</span>9.6.3 课程总结：你建成的是什么</a><a class="" href="#9-7-常见问题与恢复"><span class="toc-num">8</span>9.7 常见问题与恢复</a><a class="" href="#参考文献"><span class="toc-num">9</span>参考文献</a></aside></div></div></div><footer class="site-footer">从零开始，学会搭建一个酷炫的 Obsidian 个人知识库 · 人工审核稿</footer></div></body></html>

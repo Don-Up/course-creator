@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "course_context": {
+    "title": "从零开始，学会搭建一个酷炫的 Obsidian 个人知识库",
+    "mission": "# 课程 MISSION\n\n## 课程标识\n- 课程名称：从零开始，学会搭建一个酷炫的 Obsidian 个人知识库\n- 课程 slug：advanced-learning-of-obsidian\n- 版本：1.0\n\n## 受众\n课程面向 0 基础或只有少量编程经验、对 AI 全栈开发感兴趣的学习者。默认学习者只掌握简单的编程基础，希望通过本课程完整学习 RAG 和 Obsidian，因此首次出现的术语、概念和复杂机制都要先解释并提供必要铺垫。\n\n## 学习成果\n1. 理解 Obsidian 是什么、为什么出现、解决什么问题，以及与 RAG 的异同。\n2. 能够解释 Obsidian 在 AI 工程化领域中的作用。\n3. 独立完成从基础使用到搭建一个个人的 Obsidian 知识库的渐进实践。\n4. 掌握面向 RAG 的 Markdown 数据建模、AST 解析与分块策略。\n5. 能够通过插件架构接入云端大模型 API，并理解其工作原理。\n6. 具备部署全本地离线 RAG 架构（Ollama + 本地向量数据库）的能力。\n7. 熟悉混合检索与重排序技术，解决传统 RAG 召回精度问题。\n8. 理解 GraphRAG 原理，并能将 Obsidian 双链与知识图谱融合。\n9. 能够通过 MCP 将 Obsidian 知识库暴露为外部工具的上下文服务。\n10. 掌握 RAG 效果评估与知识库维护方法，实现 Agentic 工作流闭环。\n\n## 范围\n本课程共 9 章，每章有效字符数不低于 10,000 字，内容覆盖以下主题：\n\n### 第 1 章：个人知识库选型与 RAG 演进哲学\n知识库工具选型对比：Obsidian (Local-first Markdown)、Notion (Cloud/Block DB)、企业级 RAG 系统 (Dify / RAGFlow)。RAG 架构的演进脉络：Naive RAG → Advanced RAG → GraphRAG → Agentic RAG/MCP。学习目标：理解各选型的适用场景，明确为何 Obsidian 是开发者搭建“个人 AI 第二大脑”的最佳本地轻量级载体。\n\n### 第 2 章：面向 RAG 的 Markdown 数据建模与 AST 解析\n高质量向量化数据源搭建：原子化笔记、YAML Frontmatter 元数据设计。Markdown 的分块策略：基于 AST 的递归切分，父子文档策略。学习目标：掌握针对 Markdown 文本的数据清洗与结构化设计，提升召回准度。\n\n### 第 3 章：插件架构拆解与云端 API 快速落地\nObsidian 流行 AI 插件工作原理拆解：Smart Connections 本地索引缓存、Copilot/Smart Composer 的上下文窗口与流式输出。接入云端大模型 API（DeepSeek / OpenAI / Claude），检查本地向量数据结构。学习目标：跑通端到端链路，并从代码逻辑层面理解插件与 Obsidian API 的交互。\n\n### 第 4 章：全本地离线闭环——Ollama + 本地 Vector DB 部署\n本地模型选型与算力评估：Embedding 模型（bge-m3、nomic-embed-text），LLM 推理引擎（Ollama / LM Studio 部署 Qwen2.5 或 DeepSeek-R1 蒸馏版）。配置本地服务暴露 OpenAI 兼容接口，实现 100% 离线运行、零数据上云的本地 RAG。学习目标：建立一套不依赖任何外部付费 API 的私有安全 RAG 架构。\n\n### 第 5 章：Advanced RAG 进阶——混合检索与 Re-ranking\n纯向量检索的局限，混合检索架构：Sparse Search (BM25) + Dense Search 融合算法 (RRF)。引入重排序模型（bge-reranker）对 Top-K 结果二次打分。学习目标：解决传统 RAG 召回精度差、检索“似是而非”的痛点。\n\n### 第 6 章：突破语义局限——基于 Obsidian 双链的 GraphRAG\n向量 RAG 的瓶颈，GraphRAG 原理：实体与关系提取，构建知识图谱。微软 GraphRAG 理念与轻量级实现（LightRAG / Simple Graph Builder 插件）。Obsidian 原生双链作为显式图边，实现多跳推理。学习目标：掌握 GraphRAG 理论与双链结合方式，提升 AI 处理复杂逻辑关联的能力。\n\n### 第 7 章：Obsidian 3D 视觉化——关系图谱与进阶效果\n基于社区插件的 3D 关系图谱实现，将平面笔记网络转化为立体、可旋转的动态三维空间。讲解插件安装配置、视觉效果优化、与双链知识的结合，以及利用 3D 图谱辅助知识探索与创意发现。学习目标：掌握 Obsidian 3D 图谱的启用与定制，理解其渲染原理，并将三维视觉化融入个人知识库的探索与展示流程。\n\n### 第 8 章：开发者扩展——基于 MCP 与外部生态联动\nMCP 协议介绍，将 Obsidian 知识库作为 MCP Server 暴露给 Cursor、Claude Code 等工具。自动化脚本开发：Python 监听文件变动，配合 LangChain/LlamaIndex 自动更新外部向量数据库。学习目标：让 Obsidian 成为全工作流的上下文提供者。\n\n### 第 9 章：知识库评估、维护与 Agentic 工作流闭环\nRAG 效果评估：RAGAS 框架的忠实度、答案相关性、上下文精准度。知识库防衰退与垃圾回收，增量更新中的向量漂移与冗余清理。Agentic 闭环工作流：提出课题 → 检索 → 生成草稿 → 自动创建笔记并写回双链和 Tag。学习目标：实现知识从输入到检索、辅助思考、自动写回的可持续演进闭环。\n\n## 前置条件\n- 具备基本的计算机操作能力，能够安装和配置软件。\n- 了解简单的编程概念（如变量、函数、命令行操作），但不需要深入。\n- 拥有一台能连接互联网的个人电脑（Windows/macOS/Linux 均可）。\n- 愿意在本地环境中进行实验和配置。\n\n## 交付物\n- 全部 9 章课程内容，以 Markdown + HTML 格式交付。\n- 每章包含详细的概念讲解、操作步骤、代码示例、配置说明和常见问题排查。\n- 配套的示例仓库、配置文件模板和检查清单。\n- 最终学习者将拥有一个完全可运行的本地 Obsidian 知识库及 RAG 系统。\n\n## 来源政策\n允许使用用户提供的资料与公开官方资料（包括 Obsidian 官方文档、插件文档、模型官方说明等）。所有引用需注明出处，不得直接复制受版权保护的内容。\n\n## 人工闸门\n- 每章内容生成后，须经过人工审核确认方可进入下一章。\n- 质量门包括：逐章 Humanizer、构建、确定性检查、语义审校、人工确认。\n- 自动返工上限：同类问题连续三轮后转人工处理。\n- 任何涉及安全、破坏性操作或重大架构变更的步骤，必须高亮警示并建议在隔离环境中先行测试。\n\n## 成功标准\n1. 学习者能够独立完成课程所有章节的实践操作，并成功搭建本地 Obsidian 知识库及 RAG 系统。\n2. 学习者能够解释每一步的原理，而非仅机械执行命令。\n3. 学习者能够根据自己的需求，对课程中的配置进行自定义调整（如更换模型、调整分块策略）。\n4. 课程内容在交付后，经至少 3 名目标受众测试，完成率超过 80%，且无重大流程性错误。\n5. 每章有效字符数均不低于 10,000 字，内容密度满足深度学习需求。\n6. 所有代码和配置均可复现，无因版本漂移导致的阻塞问题。\n",
+    "request": {
+      "title": "从零开始，学会搭建一个酷炫的 Obsidian 个人知识库",
+      "slug": "advanced-learning-of-obsidian",
+      "audience": "课程面向 [[0 基础或只有少量编程经验、对 AI 全栈开发感兴趣的学习者]]。默认学习者只掌握简单的编程基础，希望通过本课程完整学习 RAG 和 Obsidian，因此首次出现的术语、概念和复杂机制都要先解释并提供必要铺垫。",
+      "goals": "帮助学习者理解 Obsidian 是什么、为什么出现、解决什么问题，以及与 RAG 的异同；能够解释它在 AI 工程化领域中的作用，并独立完成从基础使用到搭建一个个人的 Obsidian 知识库的渐进实践。",
+      "scope": "第 1 章：个人知识库选型与 RAG 演进哲学知识库工具选型对比：Obsidian (Local-first Markdown)： 纯文本、透明的 AST 语法树、支持 Git 版本控制，极度适合做细粒度的语义分块与本地索引。  Notion (Cloud/Block DB)： 基于 Block JSON 的数据结构，存在 API 速率限制与云端数据锁死风险。企业级 RAG 系统 (Dify / RAGFlow)： 重型多租户 ETL 管道 + Postgres/Milvus 向量库，适合海量非结构化文档，但对个人碎片化思考治理过于笨重。RAG 架构的演进脉络：$\\text{Naive RAG (纯向量相似度)} \\rightarrow \\text{Advanced RAG (混合检索+重排序)} \\rightarrow \\text{GraphRAG (图拓扑推理)} \\rightarrow \\text{Agentic RAG/MCP}$。学习目标： 理解各选型的适用场景，明确为何 Obsidian 是开发者搭建“个人 AI 第二大脑”的最佳本地轻量级载体。第 2 章：面向 RAG 的 Markdown 数据建模与 AST 解析高质量向量化数据源搭建：原子化笔记（Atomic Notes）： 单文件聚焦单一概念，天然解决重叠上下文（Overlapping Context）问题。YAML Frontmatter 元数据设计： 规范 tags、status、type，为 RAG 阶段的元数据过滤（Metadata Filtering）打下基础。Markdown 的分块（Chunking）策略：为什么传统的“固定字符数切分（Fixed-size Chunking）”会破坏 Markdown 的语义结构？基于 Markdown AST（抽象语法树） 的分块：按 H1/H2/H3 标题递归切分，以及父子文档（Parent-Child / Small-to-Big Chunking）策略。学习目标： 掌握针对 Markdown 文本的数据清洗与结构化设计，提升召回准度。第 3 章：插件架构拆解与云端 API 快速落地Obsidian 流行 AI 插件工作原理拆解：Smart Connections： 如何在本地处理 Markdown 文件变动，并将 Embedding 索引缓存至本地 SQLite/Vector 库。Copilot / Smart Composer： 如何利用上下文窗口（Context Window）构建提示词模板并实现流式输出（SSE）。实战配置：接入云端大模型 API（DeepSeek / OpenAI / Claude）。检查 .obsidian/plugins/ 下生成的本地向量数据结构，追踪分块与 Embedding 的生成逻辑。学习目标： 跑通端到端链路，并从代码逻辑层面理解插件是如何与 Obsidian API 进行交互的。第 4 章：全本地离线闭环——Ollama + 本地 Vector DB 部署本地模型选型与算力评估：Embedding 模型选型： bge-m3（多语言/长文本）、nomic-embed-text 等模型的量化与显存占用分析。LLM 推理引擎： 利用 Ollama / LM Studio 本地部署 Qwen2.5 或 DeepSeek-R1 蒸馏版（GGUF 格式）。  架构落地：配置本地服务暴露 OpenAI 兼容接口（http://localhost:11434/v1）。结合如 Analogy（基于本地 ChromaDB/Node.js 运行）或 Smart Connections 实现 100% 离线运行、零数据上云 的本地 RAG。学习目标： 建立一套不依赖任何外部付费 API 的私有安全 RAG 架构。第 5 章：Advanced RAG 进阶——混合检索与 Re-ranking纯向量检索（Dense Search）的局限： 无法精确匹配专有名词、特定代码函数名或英文缩写。混合检索（Hybrid Search）架构：Sparse Search (BM25/倒排索引) + Dense Search (Vector Embedding) 的融合算法（Reciprocal Rank Fusion, RRF）。引入重排序（Re-ranking）：配置 Cross-Encoder 模型（如 bge-reranker），对向量召回的 Top-K 结果进行二次打分，剔除无关上下文。学习目标： 解决传统 RAG 召回精度差、检索“似是而非”的痛点。第 6 章：突破语义局限——基于 Obsidian 双链的 GraphRAG向量 RAG 遇到的“瓶颈”： 无法回答全局概括性问题（如：“我的知识库里关于‘分布式系统’的所有核心观点是什么？”）。GraphRAG 原理：从 Markdown 提取实体（Entities）和关系（Relations），构建知识图谱。微软 GraphRAG 理念与轻量级 GraphRAG（如 LightRAG / Simple Graph Builder 插件）在 Obsidian 中的实现。图谱与双链融合： 将 Obsidian 的原生双链 [[Wikilinks]] 作为显式图边，结合向量隐式语义，实现多跳推理（Multi-hop Reasoning）。学习目标： 掌握 GraphRAG 理论与 Obsidian 双链的结合方式，提升 AI 处理复杂逻辑关联的能力。第 7 章：开发者扩展——基于 MCP (Model Context Protocol) 与外部生态联动打通 IDE 与知识库：什么是 MCP（模型上下文协议）？将 Obsidian 知识库作为 MCP Server 暴露给外部工具（如 Cursor、Claude Code、Windsurf）。自动化脚本开发（Python / Node.js）：利用 Python 编写文件监听脚本（watchdog），配合 LangChain / LlamaIndex 抓取 .md 文件修改，自动更新外部向量数据库（如 Qdrant / LanceDB）。学习目标： 让 Obsidian 不再只是一个孤立的笔记软件，而是成为你全工作流的上下文提供者。第 8 章：知识库评估、维护与 Agentic 工作流闭环RAG 效果评估机制：引入 RAGAS 评估框架的三个核心维度：忠实度（Faithfulness）、答案相关性（Answer Relevance）、上下文精准度（Context Precision）。知识库防衰退与垃圾回收： 解决增量更新中的向量漂移、冗余数据清理与碎片化笔记重构。Agentic 闭环工作流实战：交互链： 提出新课题 $\\rightarrow$ AI 检索本地历史笔记上下文 $\\rightarrow$ 生成结构化草稿 $\\rightarrow$ 自动在 Obsidian 中创建新笔记并写回双链和 Tag。学习目标： 实现知识从“输入 $\\rightarrow$ 检索 $\\rightarrow$ 辅助思考 $\\rightarrow$ 自动写回”的可持续演进闭环。",
+      "source_policy": "允许使用用户资料与公开官方资料",
+      "delivery": "Markdown + HTML",
+      "preferred_chapter_count": 9,
+      "effective_char_min": 10000,
+      "provider": "codex_gateway",
+      "model": "llm-gateway--deepseek-v4-pro",
+      "workflow_scope": "new_course"
+    },
+    "global_change_requests": [
+      {
+        "step": "mission",
+        "request": "增加一个章节，主要讲基于 Obsidian 的 3D 进阶效果。\nObsidian 的 3D 效果主要通过社区插件实现，最核心的功能是 3D 关系图谱（3D Graph），它能将原本平面的笔记网络转化为立体、可旋转的动态三维空间。"
+      },
+      {
+        "step": "mission",
+        "request": "增加一个章节，主要讲基于 Obsidian 的 3D 进阶效果。\nObsidian 的 3D 效果主要通过社区插件实现，最核心的功能是 3D 关系图谱（3D Graph），它能将原本平面的笔记网络转化为立体、可旋转的动态三维空间。"
+      }
+    ],
+    "workspace": {
+      "RESOURCES.md": "# 课程资源\n\n## 来源政策\n\n允许使用用户资料与公开官方资料\n\n## 检索范围与使用边界\n\n- Agent 会围绕课程核心概念、所用框架或工具的当前 API、相关标准或论文、项目实践与部署/安全边界检索资料。\n- 每一条资料都必须说明其支撑的教学内容；关键事实、API 用法和规范不得只依赖未核验的社区文章。\n- 资料是否可用以来源政策为准：只有政策允许时，才将社区教程作为补充阅读。\n\n## Agent 检索与核验\n\n任务定义确认后，Agent 会在这里写入检索计划、经筛选的资料和仍需人工补充的缺口。\n\n## 用户补充资源\n\n可在此登记链接、课程资料说明或上传附件的使用目的。\n\n- [Obsidian 中文帮助 ](https://obsidian.md/zh/help/)\n- [obsidian_tutorial](https://github.com/FDscend/obsidian_tutorial)\n- [obsidian-ai-orange-book](https://github.com/alchaincyf/obsidian-ai-orange-book)\n- [obsidian指南](https://obsidian.vip/zh/documentation/)\n- [obsidian-3d-graph](https://github.com/Apoo711/obsidian-3d-graph)\n\n<!-- agent-research:start -->\n## 自动检索记录\n\n- 本轮来源政策：允许使用用户资料与公开官方资料。\n- 检索覆盖：核心概念、框架/API、标准或论文、项目实践，以及需要时的安全与部署边界。\n- 使用方式：资料仅支撑其对应的事实、API 或实践；未核验社区资料不能作为关键事实的唯一依据。\n\n### 本轮检索计划\n\n- 检索理由：围绕课程九章内容制定检索方向，优先获取官方文档、协议标准、学术论文及核心开源项目说明。'Obsidian plugin API developer documentation'支撑第3章插件架构拆解，定位官方API与社区开发规范；'Markdown AST chunking strategy for RAG vectors'服务于第2章AST解析与分块，查找论文与最佳实践，避免固定长度切分缺陷；'Microsoft GraphRAG research paper and LightRAG implementation'对应第6章GraphRAG原理，需获取原始论文与轻量级实现文档；'Ollama OpenAI compatible endpoint local deployment embed models'覆盖第4章全本地部署，需Ollama文档与bge-m3等模型的官方说明；'Model Context Protocol MCP specification Anthropic'面向第8章MCP集成，必须基于Anthropic发布的协议标准；'RAGAS evaluation framework faithfulness answer relevance context precision'为第9章评估框架提供官方指标定义与使用指南；'Obsidian 3D graph plugin GitHub Apoo711'直接支撑新增的第7章3D关系图谱，指向核心社区插件的维护教程与配置说明。\n- 检索词：`Obsidian plugin API developer documentation`\n- 检索词：`Markdown AST chunking strategy for RAG vectors`\n- 检索词：`Microsoft GraphRAG research paper and LightRAG implementation`\n- 检索词：`Ollama OpenAI compatible endpoint local deployment embed models`\n- 检索词：`Model Context Protocol MCP specification Anthropic`\n- 检索词：`RAGAS evaluation framework faithfulness answer relevance context precision`\n- 检索词：`Obsidian 3D graph plugin GitHub Apoo711`\n\n### 已核验可用资料\n\n- [Home - Developer Documentation](https://docs.obsidian.md/Home)（official）：Official Obsidian plugin developer documentation home, covering API basics, lifecycle, and core concepts to support plugin development practice.\n- [Plugin - Developer Documentation](https://docs.obsidian.md/Reference/TypeScript+API/Plugin)（official）：Detailed Plugin class API reference defining load, save, unload hooks and metadata; essential for implementing custom plugins.\n- [GitHub - asukhodko/chunkana: A multi-strategy Markdown chunking library ...](https://github.com/asukhodko/chunkana)（community）：Multi-strategy Markdown chunking library using AST parsing, supporting header, paragraph, and token splitting for preparing RAG vectors.\n- [Enhance RAG performance through intelligent chunking strategies](https://developer.ibm.com/articles/awb-enhancing-rag-performance-chunking-strategies/)（community）：IBM article explaining intelligent chunking methods including structure-aware splitting of Markdown, improving retrieval relevance for RAG.\n- [Project GraphRAG - Microsoft Research](https://www.microsoft.com/en-us/research/project/graphrag/)（official）：Microsoft Research project page for GraphRAG, linking to the research paper and overview, supporting graph-based RAG understanding.\n- [GitHub - microsoft/graphrag: A modular graph-based Retrieval-Augmented ...](https://github.com/microsoft/graphrag)（official）：Official GraphRAG implementation, a modular library for building graph indices for retrieval-augmented generation, directly usable in course labs.\n- [OpenAI compatibility - Ollama](https://docs.ollama.com/api/openai-compatibility)（official）：Ollama documentation for OpenAI-compatible endpoint, enabling local embedding model calls and chat completions in the course local deployment module.\n- [Specification - Model Context Protocol](https://modelcontextprotocol.io/specification/2025-06-18)（standard）：MCP specification defining client-server interaction, resources, prompts, and tools; foundational standard for integrating LLMs with external tools.\n- [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol/modelcontextprotocol)（standard）：Official MCP repository containing the protocol specification and reference implementations, supporting practical understanding and integration.\n\n### 检索备注\n\n- Missing resources for LightRAG implementation: search results provided only GraphRAG items; no LightRAG repository or paper found.\n- Missing resources for RAGAS evaluation framework (faithfulness, answer relevance, context precision): no results returned for the query.\n- Missing resources for Obsidian 3D graph plugin by Apoo711: no results returned for the query.\n\n<!-- agent-research:end -->\n",
+      "COURSE-GENERATION-SPEC.md": "# 课程生成规格\n\n- 交付格式：Markdown + HTML\n- 期望章节数：9（以课程蓝图为准）\n- 单章有效字符数下限：10000\n- 运行模式：本地单用户、引导模式\n- 质量门：逐章 Humanizer、构建、确定性检查、语义审校、人工确认\n- 自动返工上限：同类问题连续三轮后转人工\n",
+      "NOTES.md": "# 课程迭代笔记\n\n本课程由课程生成 Agent 创建，当前处于引导模式。\n\n- 根据用户反馈，新增第7章“Obsidian 3D 视觉化——关系图谱与进阶效果”，介绍基于社区插件的3D关系图谱实现，相应调整章节总数及顺序。\n"
+    }
+  },
+  "module_context": {
+    "title": "本地智能——离线 RAG 与高级检索",
+    "goal": "构建完全不依赖云服务的私有 RAG 架构，并通过混合检索与重排序技术显著提升 AI 回答的精准度。",
+    "narrative": "离开云端，依然智慧。先用 Ollama 部署本地 Embedding 模型和 LLM，让所有数据留在本机；再直面纯向量检索的弱点，引入 BM25 稀疏检索和 RRF 融合算法，最后用 Cross-Encoder 进行精细重排序。这一模块将把学习者的本地知识库从「能用」升级为「精准好用」。",
+    "chapter_sequence": [
+      {
+        "number": 4,
+        "title": "全本地离线闭环——Ollama + 本地 Vector DB 部署",
+        "learning_outcome": "能够评估本地模型算力需求，部署 Ollama 及 bge-m3/nomic-embed-text 等 Embedding 模型，配置 Qwen2.5/DeepSeek-R1 蒸馏版 LLM，并实现与 Obsidian 插件的离线 RAG 闭环。"
+      },
+      {
+        "number": 5,
+        "title": "Advanced RAG 进阶——混合检索与 Re-ranking",
+        "learning_outcome": "能够诊断纯向量检索的召回缺陷，实现 BM25 + 向量检索的混合架构并使用 RRF 融合，部署 bge-reranker 等 Cross-Encoder 模型对召回结果进行重排序。"
+      }
+    ]
+  },
+  "chapter": {
+    "number": 5,
+    "title": "Advanced RAG 进阶——混合检索与 Re-ranking",
+    "learning_outcome": "能够诊断纯向量检索的召回缺陷，实现 BM25 + 向量检索的混合架构并使用 RRF 融合，部署 bge-reranker 等 Cross-Encoder 模型对召回结果进行重排序。",
+    "prerequisites": [
+      "第4章搭建的本地 RAG 环境",
+      "理解 Embedding 与向量检索的基本原理"
+    ],
+    "continuity_in": [
+      "第4章的本地向量 DB 和 API 是混合检索的基石"
+    ],
+    "continuity_out": [
+      "为第6章 GraphRAG 的精准实体匹配提供检索增强",
+      "为第9章评估模块提供高质量基线"
+    ],
+    "pedagogy_type": "mechanism",
+    "primary_teaching_task": "检索算法讲解与混合系统实现",
+    "instructor_voice": "算法推演者，注重「先理论推演，再代码落地」",
+    "learning_path": [
+      "密集检索的边界：专有名词、代码与缩写召回失败案例",
+      "稀疏检索回归：BM25/倒排索引原理",
+      "混合融合：RRF 算法解析",
+      "架设混合检索管道：向量 + 关键词双路召回",
+      "重排序原理：Cross-Encoder vs Bi-Encoder",
+      "部署 bge-reranker 并插入检索管线",
+      "对比实验：纯向量 vs 混合 vs 混合+重排序",
+      "解读结果：召回精度与答案质量的量化提升"
+    ],
+    "template_modules": [
+      "失败案例分析",
+      "算法原理动画/伪代码",
+      "代码实现演练",
+      "A/B 对比评测"
+    ]
+  },
+  "neighbor_context": {
+    "previous": {
+      "number": 4,
+      "title": "全本地离线闭环——Ollama + 本地 Vector DB 部署",
+      "learning_outcome": "能够评估本地模型算力需求，部署 Ollama 及 bge-m3/nomic-embed-text 等 Embedding 模型，配置 Qwen2.5/DeepSeek-R1 蒸馏版 LLM，并实现与 Obsidian 插件的离线 RAG 闭环。",
+      "prerequisites": [
+        "具备基本的命令行操作能力",
+        "已完成第3章的云端 API 配置，理解向量化流程"
+      ],
+      "continuity_in": [
+        "第3章提供了插件工作流和向量化概念",
+        "第2章提供的高质量语料直接用于本地 Embedding"
+      ],
+      "continuity_out": [
+        "为第5章混合检索提供了本地向量基础设施",
+        "为第6章 GraphRAG 实验提供本地推理能力"
+      ],
+      "pedagogy_type": "environment",
+      "primary_teaching_task": "本地模型部署与 OpenAI 兼容接口配置",
+      "instructor_voice": "谨慎细致的运维向导，强调安全与可复现",
+      "learning_path": [
+        "本地 RAG 的隐私与成本优势",
+        "算力自评：显存、量化与 GGUF 格式入门",
+        "Ollama 与 LM Studio 安装与基础使用",
+        "Embedding 模型部署：bge-m3、nomic-embed-text",
+        "LLM 部署：Qwen2.5 和 DeepSeek-R1 蒸馏版",
+        "暴露本地 OpenAI 兼容端点 (http://localhost:11434/v1)",
+        "对接 Obsidian：配置 Smart Connections 或 Analogy 使用本地服务",
+        "全离线验证：断网测试问答完整性"
+      ],
+      "template_modules": [
+        "硬件评估指南",
+        "命令行分步教程",
+        "配置文件模板",
+        "对接插件教学",
+        "安全与隔离提醒"
+      ]
+    },
+    "next": null
+  },
+  "continuity_ledger": [
+    {
+      "chapter": 2,
+      "module": "数据基石——结构化笔记与插件引擎",
+      "summary": "本章从信息组织问题出发，确立了面向RAG的结构化写作方法。首先讲解原子化笔记原则：一个.md文件聚焦单一概念，利用余弦相似度实验证明其提升嵌入向量纯度。接着引入YAML Frontmatter，定义tags、status、type等机器可读元数据，并通过Obsidian标签面板和Dataview演示即时反馈。然后剖析固定字符切分的缺陷，通过代码示警其破坏语义，再使用Python的mistune库实现基于Markdown AST的标题递归分块器，保护代码块、引用等边界。进一步提出父子文档策略（Small-to-Big Chunking）：用小粒度块建立向量索引，检索后合并父文档完整上下文送入LLM。最后动手构造异常处理笔记示例，整合原子化、元数据、AST分块与父子映射，完成从写作到可检索数据的闭环。全章强调“为检索而写作”，为后续插件实现和本地Embedding提供结构化语料基础。",
+      "established_terms": [
+        "原子化笔记（Atomic Notes）：一篇Markdown文件只承载单一概念或意图的写作原则。",
+        "YAML Frontmatter：笔记顶部由三个连字符包裹的YAML块，提供机器可读的元数据。",
+        "AST（抽象语法树）：将Markdown文本解析为表示层级结构的树形数据，用于结构感知分块。",
+        "固定字符切分：按固定字符数切割文档，不考虑语义单元边界。",
+        "标题递归切分：基于Markdown标题层级（H1/H2等）递归分割文档，保持段落完整。",
+        "父子文档策略（Small-to-Big Chunking）：用小块建立向量索引，检索命中后拉取父文档完整上下文。",
+        "嵌入向量（Embedding）：文本经模型映射的高维数值表示，用于计算语义相似度。",
+        "mistune：Python的Markdown解析库，可自定义渲染器实现AST分块。"
+      ],
+      "established_facts": [
+        "原子化笔记要求每个文件只讨论一个概念，避免混入多主题导致嵌入向量退化。",
+        "YAML Frontmatter提供tags、status、type字段，Dataview可据此动态列出笔记。",
+        "固定字符切分无视标题、代码块等结构，会撕裂语义单元，降低检索质量。",
+        "AST解析能识别Markdown层级，基于标题切分可保证每块包含完整标题和段落。",
+        "使用Python的mistune自定义渲染器，可在遇到标题时结算当前文本为独立块，并保护代码块完整。",
+        "父子文档策略在向量库存储小块，检索后将父文档全部小块拼接为LLM上下文。",
+        "给每个小块添加chunk_id和parent_doc元数据可实现从命中到父文档的映射。",
+        "构造的python异常处理三篇笔记经过原子化写作和AST切分，每篇产出1-2个干净块，验证流程。"
+      ],
+      "open_loops": [
+        "如何根据笔记type字段动态选择分块策略？（本章指出type为将来按类型调策略做准备）",
+        "当父文档过长超出模型上下文窗口时，选用section代替整体文档的具体实现。",
+        "无标题纯文本场景下AST切分优势丧失，应退化为何种切分方式。",
+        "Dataview仅扫描YAML元数据，如何实现混合全文与元数据的检索（第5章待解决）。",
+        "如何将本章的分块逻辑集成到Obsidian插件中实现实时文件切分（第3章Smart Connections原理）。",
+        "真实的高维Embedding模型如何影响召回精度，以及相应的优化（第4章将展开）。",
+        "练习中基于长度阈值和句号动态切分的完整代码及效果评估。",
+        "随着知识库增长，分块策略的维护与调优方法（第9章讨论）。"
+      ],
+      "bridge_to_next": [
+        "为第3章Smart Connections插件处理Markdown提供基于AST的标题递归分块方法，确保插件能按结构边界安全切分笔记。",
+        "为第4章本地Embedding提供经原子化与AST清洗的干净小块语料，以及chunk_id和parent_doc元数据方案，支持父子文档检索。"
+      ]
+    },
+    {
+      "chapter": 3,
+      "module": "数据基石——结构化笔记与插件引擎",
+      "summary": "本章拆解了 Obsidian 中两类 AI 插件的架构差异：以 Smart Connections 为代表的本地优先索引模式，与以 Copilot / Smart Composer 为代表的上下文窗口组装模式。深入分析了 Smart Connections 的文件监听、去抖、Markdown 分块、Embedding 向量生成及本地向量存储流程，并指出写作质量直接影响索引质量。对比了 Copilot 系插件不做预处理、依赖上下文窗口管理的机制及其截断风险。通过实战配置 DeepSeek API，使用 Smart Composer 完成首次对话，并在开发者工具中追踪 SSE 流式请求与响应。引导读者检查插件数据目录以验证向量缓存的存在。最后给出故障排查和实验练习，强化对本地索引、API 调用及数据流的理解，为后续全离线部署和检索策略建设奠定基础。",
+      "established_terms": [
+        "嵌入向量（Embedding）：将文本转换为固定长度数值数组，用于计算语义距离。",
+        "去抖（Debounce）：文件修改后等待静默期再处理，避免频繁索引。",
+        "SSE（Server-Sent Events）：服务器持续推送单 token 数据块，实现打字机般流式输出。",
+        "上下文窗口（Context Window）：大模型一次能处理的文本总量上限，决定了能放入多少笔记内容。",
+        "索引模式：预先为所有笔记生成向量并本地存储，提问时先检索再回答。",
+        "上下文模式：不做预处理，每次把选中或 @ 引用的文件直接打包成 Prompt 发送给云端模型。",
+        "OpenAI 兼容接口：支持与 OpenAI 相同 JSON 请求格式的第三方 API，如 DeepSeek 的 /v1/chat/completions。",
+        "余弦相似度：衡量问题向量与文本块向量之间方向一致性的指标，用于检索最相关块。"
+      ],
+      "established_facts": [
+        "Smart Connections 在启动时注册 Vault 的文件创建、修改、删除事件，并在修改后通过去抖触发索引更新。",
+        "Smart Connections 按 Markdown 结构边界分块，优先使用标题和空行，不规范的纯文本会退回到按 token 数强制切分。",
+        "生成的嵌入向量与文本块的哈希、原始内容一起存入本地 JSON 或 SQLite 文件，位于 .obsidian/plugins/smart-connections/ 下。",
+        "Copilot / Smart Composer 不建立索引，提问时收集活跃文件或 @ 引用的内容，按顺序拼装系统提示与用户消息后直接调用云端 LLM。",
+        "Copilot 系插件面临上下文窗口溢出风险，通常按文件顺序截断，可能导致信息丢失和错误回答。",
+        "通过 Obsidian 开发者工具 Network 面板可以观察到对 chat/completions 的 POST 请求，其中包含 system 和 user 消息，以及流式响应数据块。",
+        "Smart Composer 使用 OpenAI 兼容接口接入 DeepSeek，只需要填写 API Base URL (https://api.deepseek.com/v1) 和 model 名 deepseek-chat。",
+        "Smart Connections 在全库向量检索时在本地用 JavaScript 遍历所有向量计算余弦相似度，笔记数万以上时可能成为性能瓶颈。"
+      ],
+      "open_loops": [
+        "如何用本地模型（如 Ollama）完全替代云端 Embedding 和 LLM，实现全离线 RAG 系统？",
+        "在第4章全离线部署中，Smart Connections 的向量存储与本地推理如何无缝衔接？",
+        "上下文窗口管理策略的具体优化方案（如滑动窗口、自动摘要）尚未实现和验证。",
+        "当知识库继续增长到数万篇笔记时，本地纯 JavaScript 向量检索的规模瓶颈如何突破？",
+        "第5章将基于向量已生成的前提构建检索策略，但目前尚未涉及检索增强的具体方法（如重排序、多跳检索）。"
+      ],
+      "bridge_to_next": [
+        "已经生成本地向量缓存，下一章可直接使用 Ollama 等本地 Embedding 模型替代云端 API，仅修改 URL 和模型名。",
+        "本章演示了云端 API 的请求与流式响应结构，第4章将用相同接口模式接入本地推理服务，保持调用逻辑不变。",
+        "Smart Connections 的本地向量文件为全离线部署提供了可复用的知识库索引，过渡到全本地 RAG 无需重新生成。",
+        "读者已在 Network 面板中观察过请求体结构，下一章可在本地服务端验证相同的 Payload，加深对 API 兼容性的理解。",
+        "故障排查中提到的网络依赖问题，第4章将通过全部本地化得到解决，实现零信任环境下的可靠问答。",
+        "索引质量对检索结果的影响已被验证，为后续章节调整分块策略和 Metadata 过滤提供了动机。"
+      ]
+    },
+    {
+      "chapter": 4,
+      "module": "本地智能——离线 RAG 与高级检索",
+      "summary": "本章完成了全本地离线RAG闭环的部署。首先评估硬件与模型选型：解释GGUF格式与量化概念，推荐使用多语言长文本的bge-m3作为Embedding模型，对话模型按内存选qwen2.5:7b或3b。接着安装Ollama，拉取并验证bge-m3和qwen2.5，通过curl测试本地Embedding与Chat Completions端点，确认与OpenAI格式兼容。随后在Smart Connections插件中将Embedding和对话模型的提供商切换为本地Ollama（地址http://localhost:11434/v1），强制重建向量索引。最后通过断网测试验证：提问、检索、回答全部基于本机完成，笔记数据与推理均不离开电脑。故障排查部分涵盖进程、模型、接口、插件等常见问题。整个过程建立了从笔记向量化到离线问答的完整基础，明确区分了Embedding模型与对话模型的职责，并指出了纯向量检索的局限，为下一章混合检索做好准备。",
+      "established_terms": [
+        "GGUF：本地推理专用模型文件格式，支持CPU高效运行和GPU卸载，量化后压缩模型体积。",
+        "量化：将模型权重从高精度浮点数压缩为低位整数（如4位），降低内存占用和提升速度，轻微损失推理质量。",
+        "bge-m3：BAAI发布的多语言Embedding模型，支持8192 token输入、输出1024维稠密向量，兼具稀疏表示，适用于中英混合笔记。",
+        "nomic-embed-text：轻量英文Embedding模型，参数量小（~270 MB），适合英文为主且内存紧张的场景。",
+        "Ollama：本地大模型运行工具，提供模型下载、推理与OpenAI兼容HTTP API，默认使用CPU推理，可自动启用GPU加速。",
+        "Smart Connections：Obsidian插件，通过配置API地址和模型名，可对接本地或云端LLM与Embedding服务，实现笔记RAG问答。",
+        "本地RAG闭环：笔记向量索引、检索与回答生成全部在本地完成，断网后仍能正常工作。"
+      ],
+      "established_facts": [
+        "bge-m3拉取后体积约1.2 GB，输出嵌入维度为1024；qwen2.5:7b量化后约4.5 GB。",
+        "Ollama在http://localhost:11434/v1暴露与OpenAI兼容的/embeddings和/chat/completions端点，无需API密钥。",
+        "切换Embedding模型后必须重建Smart Connections向量索引，否则新旧维度不匹配会引发检索异常。",
+        "纯CPU推理下MacBook Air每秒输出3-8 token，有NVIDIA显卡加速则接近云端速度。",
+        "断网测试成功意味着笔记文本、向量、模型权重和推理全在本地，无数据离开本机。",
+        "Smart Connections的Chat模型API URL改为http://localhost:11434/v1，模型名写为qwen2.5:7b即可对接本地服务。",
+        "内存8 GB时推荐使用qwen2.5:3b，否则拉取7B模型可能导致系统卡顿或下载中断。"
+      ],
+      "open_loops": [
+        "纯向量检索可能漏掉专有名词、代码片段和英文缩写，此为当前RAG系统的已知局限。",
+        "bge-m3的稀疏表示能力在本章未使用，仅为稠密向量检索，其潜在价值待后续挖掘。",
+        "本地7B/3B模型在笔记片段信息量少时可能编造内容，回答质量与DeepSeek旗舰模型仍有差距。",
+        "第5章将引入混合检索（关键词+向量）与重排序来解决检索遗漏和回答可靠性问题。"
+      ],
+      "bridge_to_next": [
+        "Ollama本地服务已稳定运行，Embedding与对话端点接口为混合检索提供了可直接调用的向量检索基础。",
+        "bge-m3的稀疏词权重能力可用于BM25关键词搜索，作为第5章混合检索的天然组件。",
+        "Smart Connections已接入本地模型，后续只需插件内增加关键词搜索和重排序配置即可升级检索流程。",
+        "全离线推理能力为第6章GraphRAG实验所需的本地语义计算做好准备。"
+      ]
+    }
+  ],
+  "feedback": ""
+}

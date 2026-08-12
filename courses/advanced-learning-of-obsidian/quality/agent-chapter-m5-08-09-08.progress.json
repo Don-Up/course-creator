@@ -1,0 +1,21 @@
+{
+  "body_generated": true,
+  "pending_stage": "completed",
+  "path": "lessons/08-mcp.md",
+  "effective_chars": 12173,
+  "humanizer_score": 47,
+  "semantic_review": {
+    "score": 94,
+    "decision": "ready",
+    "issues": [
+      "[minor] 分块函数仅按中文句号切分超长段落，英文笔记可能失效 | 证据：『sentences = para.replace(\"。\", \"。|||\").split(\"|||\")』 | 建议：补充对英文句点的处理（如 `.replace(\".\", \".|||\")`），或提示学习者根据笔记语言调整分隔符。"
+    ],
+    "strengths": [
+      "MCP 生命周期讲解循序渐进，从概念到交互序列图再到最小验证脚本，学习者可动手逐级验证。",
+      "安全防线（路径遍历 `is_relative_to` 检查）解释透彻，并给出可控实验，强化安全意识。",
+      "防抖机制用具体反例演示“零延迟”的危害，工程直觉培养到位。",
+      "练习设计有明确测试反例（如标签过滤练习要求构造两条不同条件的笔记），引导学习者验证正确性与边界。",
+      "已忽略 1 条无法在原文定位的审校结论。"
+    ]
+  }
+}
