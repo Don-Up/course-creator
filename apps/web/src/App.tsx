@@ -1,21 +1,18 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import { Layout } from "./components/layout";
-import { ChapterWorkspace, CourseWorkspace, Dashboard, NewCourse } from "./pages/course-pages";
-import { WorkflowOverview } from "./pages/workflow-overview";
-import { RunWorkspace } from "./features/run/run-workspace";
+import { CoursesPage, NewCoursePage, WorkflowPage } from "./pages";
+
 
 export default function App() {
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/new" element={<NewCourse />} />
-        <Route path="/workflow" element={<WorkflowOverview />} />
-        <Route path="/courses/:slug" element={<CourseWorkspace />} />
-        <Route path="/courses/:slug/chapters/:key" element={<ChapterWorkspace />} />
-        <Route path="/runs/:runId" element={<RunWorkspace />} />
-      </Routes>
-    </Layout>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<CoursesPage />} />
+        <Route path="workflow" element={<WorkflowPage />} />
+        <Route path="new" element={<NewCoursePage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   );
 }

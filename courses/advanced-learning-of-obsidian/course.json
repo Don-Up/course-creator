@@ -5,13 +5,6 @@
   "description": "帮助学习者理解 Obsidian 是什么、为什么出现、解决什么问题，以及与 RAG 的异同；能够解释它在 AI 工程化领域中的作用，并独立完成从基础使用到搭建一个个人的 Obsidian 知识库的渐进实践。",
   "duration": "待蓝图确认",
   "status": "published",
-  "published_at": "2026-08-06T07:47:42.729971+00:00",
-  "publication": {
-    "status": "published",
-    "published_at": "2026-08-06T07:47:42.729971+00:00",
-    "workflow_run_id": "99b2f113-2345-4811-87c2-7c3063638399"
-  },
-  "audience": "课程面向 [[0 基础或只有少量编程经验、对 AI 全栈开发感兴趣的学习者]]。默认学习者只掌握简单的编程基础，希望通过本课程完整学习 RAG 和 Obsidian，因此首次出现的术语、概念和复杂机制都要先解释并提供必要铺垫。",
   "lessons": [
     {
       "number": 1,
@@ -102,49 +95,6 @@
       "status": "available",
       "href": "lessons/09-agentic.html",
       "markdown": "lessons/09-agentic.md"
-    }
-  ],
-  "workflow_run_id": "99b2f113-2345-4811-87c2-7c3063638399",
-  "planned_chapter_count": 9,
-  "modules": [
-    {
-      "title": "认知基础——知识管理与RAG哲学",
-      "goal": "建立对个人知识库工具和RAG演进的全局理解，为后续技术选型与动手实践提供认知锚点。",
-      "chapterNumbers": [
-        1
-      ]
-    },
-    {
-      "title": "数据基石——结构化笔记与插件引擎",
-      "goal": "掌握面向 RAG 的 Markdown 数据建模与 AST 分块策略，并透过主流 AI 插件理解 Obsidian 的扩展机制与云端 API 对接原理。",
-      "chapterNumbers": [
-        2,
-        3
-      ]
-    },
-    {
-      "title": "本地智能——离线 RAG 与高级检索",
-      "goal": "构建完全不依赖云服务的私有 RAG 架构，并通过混合检索与重排序技术显著提升 AI 回答的精准度。",
-      "chapterNumbers": [
-        4,
-        5
-      ]
-    },
-    {
-      "title": "知识关联——图谱与可视化",
-      "goal": "突破语义检索的平面局限，运用 GraphRAG 和 3D 关系图谱将知识库升级为可推理、可探索的立体网络。",
-      "chapterNumbers": [
-        6,
-        7
-      ]
-    },
-    {
-      "title": "工程集成——MCP 扩展与闭环进化",
-      "goal": "将 Obsidian 从孤岛锻造为全工作流上下文中心，并通过评估与 Agentic 工作流实现知识库的自我进化。",
-      "chapterNumbers": [
-        8,
-        9
-      ]
     }
   ]
 }

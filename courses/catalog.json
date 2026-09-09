@@ -5,7 +5,7 @@
       "slug": "advanced-learning-of-obsidian",
       "title": "从零开始，学会搭建一个酷炫的 Obsidian 个人知识库",
       "description": "帮助学习者理解 Obsidian 是什么、为什么出现、解决什么问题，以及与 RAG 的异同；能够解释它在 AI 工程化领域中的作用，并独立完成从基础使用到搭建一个个人的 Obsidian 知识库的渐进实践。",
-      "href": "./advanced-learning-of-obsidian/index.html",
+      "href": "/course-example/",
       "chapters": 9,
       "duration": "待蓝图确认",
       "status": "published"

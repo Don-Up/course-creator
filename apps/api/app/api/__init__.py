@@ -1,1 +1,1 @@
-"""HTTP API composition and focused route modules."""
+"""HTTP routes for the training scaffold."""

@@ -2,48 +2,63 @@
 
 ## 项目定位
 
-本仓库是 AI 课程生成 Agent 训练营项目。目标是开发和理解一个本地优先的课程生产系统，而不是直接手工编写某一门课程。系统由 React/Vite 前端、FastAPI/LangGraph 后端和本地 SQLite 运行数据组成，课程产物保存在 `courses/<course-slug>/`。
+本仓库是 AI Course Studio 训练营的教学脚手架。它保留 React/Vite 与
+FastAPI 的最小运行链路，供学员按 `implementation-guide-20-lessons/` 逐阶段
+实现课程生成 Agent。当前代码不是完整 Demo，不应假设 Agent 运行时已经存在。
 
-## 任务边界
+## 目录职责
 
-- 产品开发：涉及 `apps/web/`、`apps/api/`、工作流、Provider、数据库、构建脚本或产品文档时，按软件工程任务处理。
-- 课程生产或课程内容编辑：涉及课程规划、章节生成、质量审校时，遵循 `.agents/skills/teach-generator/SKILL.md`；中文学生可见正文还要遵循 `.agents/skills/humanizer-zh/SKILL.md`。
-- FastAPI 代码：遵循 `.agents/skills/fastapi/SKILL.md` 的 Python 编码规范。
+- `apps/web/`：React + TypeScript 前端。前端只通过 REST API 读取后端数据。
+- `apps/api/`：FastAPI 后端。当前仅暴露健康检查与课程列表。
+- `courses/`：静态示例课程；`courses/catalog.json` 是示例课程列表的事实源。
+- `.agents/skills/`：版本化的领域与工程规则，必须整体保留。
+- `implementation-guide-20-lessons/`：训练营分阶段实施指引。
 
-## 架构与数据边界
+## 分阶段约束
 
-- 前端位于 `apps/web/`，通过 REST API 访问后端；API 契约变更必须同步更新前端类型与测试。
-- 后端位于 `apps/api/`。运行状态、事件、人工中断与模型 artifact 写入根目录 `.course-agent/` 中的 SQLite 文件。
-- 课程正文 Markdown 位于 `courses/<slug>/lessons/`，是事实源；HTML 是由 `scripts/build-static-course.mjs` 生成的发布产物，不能直接手改。
-- 课程 `workspace/` 是可审阅的生产上下文；所有文件读写必须限制在目标课程目录，防止路径穿越，并使用安全的原子替换策略。
-- 本仓内置唯一课程样例为 `courses/advanced-learning-of-obsidian/`。新课程通过产品界面创建，不应复制无关课程或历史运行数据。
+- 未进入相应阶段前，不得提前加入 LLM Provider、Fake Provider、Run、Artifact、
+  数据库、LangGraph、Worker、队列、质量闭环或自动发布。
+- 七阶段产品契约固定为：`intake`、`mission`、`blueprint`、`batch_plan`、
+  `generation`、`quality`、`release`。
+- `release` 必须保留人工决策权；模型和代码不得静默替代该决定。
+- 示例课程用于观察发布结果，不代表脚手架已经能够生成或编辑课程。
 
-## 工作流约束
+## 代码规范
 
-标准节点顺序：`intake` → `mission` → `blueprint` → `batch_plan` → `generation` → `quality` → `release`。
+- 前端使用 React + TypeScript。API 契约变更必须同步更新前端类型和测试。
+- 后端使用 FastAPI + Pydantic；路由按资源拆分，公开响应使用明确的返回类型或
+  `response_model`。
+- Python 使用 Python 3.12、Ruff，单行最大 92 字符。
+- 使用 `apply_patch` 修改源码与文档；不要覆盖或回滚已有用户改动。
+- 输入路径必须规范化并限制在允许的课程目录内；初始脚手架不提供文件写入 API。
+- 优先使用标准库和已有依赖。新依赖必须对应当前阶段的明确需求。
+- 不提交 `.venv/`、`node_modules/`、`.course-agent/`、缓存、构建目录或 `.env`。
 
-- 新建课程产物必须属于当前 Run，不能伪装成从本地恢复的数据。
-- 节点开始、完成、等待人工确认与失败必须记录事件；模型和工具结果必须写入 artifact。
-- 人工确认支持批准、要求修改与停止；连续三轮同类 blocker 后转人工审核。
-- 课程质量和重建使用 `teach-generator` 提供的规则与校验脚本。
+## Skill 适用范围
 
-## 开发规范
+- FastAPI 代码遵循 `.agents/skills/fastapi/SKILL.md`。
+- 课程生产、课程规划和质量审校遵循
+  `.agents/skills/teach-generator/SKILL.md`。
+- 中文学生可见正文遵循 `.agents/skills/humanizer-zh/SKILL.md`。
 
-- 使用 `apply_patch` 修改源码与文档；不覆盖或回滚用户已有改动。
-- 不提交 `.venv/`、`node_modules/`、`.course-agent/`、缓存、构建目录或 `.env` 密钥文件。
-- 变更后运行受影响范围的验证：前端至少执行 `npm --prefix apps/web run build`，后端执行对应 `pytest`，课程结构变更执行课程校验。
-- Provider 能力存在差异；模型调用不能假设每个 Provider 都支持相同的 `tool_choice`、thinking mode 或结构化输出参数。
-- 长任务不能阻塞 API 请求；由 Worker 在后台运行，前端通过轮询或事件展示进度。
+## 验证
 
-## 启动与验证
-
-优先使用 `bash scripts/start-agent.sh`。该脚本会创建 `apps/api/.venv`、安装依赖并同时启动 API、Worker 和前端。首次使用前将 `apps/api/.env.example` 复制为 `apps/api/.env`，再配置本地 Codex Gateway 或 `DEEPSEEK_API_KEY`。
-
-常用命令：
+涉及前端时运行：
 
 ```bash
+npm --prefix apps/web run typecheck
 npm --prefix apps/web run build
+```
+
+涉及后端时运行：
+
+```bash
 apps/api/.venv/bin/python -m pytest apps/api/tests
-npm run test:contract
-node .agents/skills/teach-generator/scripts/validate-course.mjs courses/advanced-learning-of-obsidian
+```
+
+变更启动或接口行为后，额外验证：
+
+```bash
+curl http://127.0.0.1:8000/api/health
+curl http://127.0.0.1:8000/api/courses
 ```

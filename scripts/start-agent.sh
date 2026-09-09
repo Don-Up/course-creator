@@ -7,19 +7,19 @@ WEB_ROOT="$REPO_ROOT/apps/web"
 PYTHON_BIN="${PYTHON_BIN:-$(command -v python3.12 || true)}"
 VENV_ROOT="$API_ROOT/.venv"
 
+available_port() {
+  local port="$1"
+  while nc -z 127.0.0.1 "$port" >/dev/null 2>&1; do
+    port=$((port + 1))
+  done
+  printf '%s' "$port"
+}
+
+API_PORT="$(available_port "${API_PORT:-8000}")"
+WEB_PORT="$(available_port "${WEB_PORT:-5173}")"
+
 if [[ -z "$PYTHON_BIN" || ! -x "$PYTHON_BIN" ]]; then
   echo "需要 Python 3.12。macOS 可运行: brew install python@3.12"
-  exit 1
-fi
-
-if [[ ! -f "$API_ROOT/.env" ]]; then
-  cp "$API_ROOT/.env.example" "$API_ROOT/.env"
-  echo "已创建 apps/api/.env。请填写 DEEPSEEK_API_KEY 后重新运行。"
-  exit 1
-fi
-
-if ! grep -Eq '^DEEPSEEK_API_KEY=.+$' "$API_ROOT/.env"; then
-  echo "请先在 apps/api/.env 中填写 DEEPSEEK_API_KEY。"
   exit 1
 fi
 
@@ -27,7 +27,7 @@ if [[ ! -x "$VENV_ROOT/bin/python" ]]; then
   "$PYTHON_BIN" -m venv "$VENV_ROOT"
 fi
 
-if ! "$VENV_ROOT/bin/python" -c "import fastapi, langgraph" >/dev/null 2>&1; then
+if ! "$VENV_ROOT/bin/python" -c "import fastapi" >/dev/null 2>&1; then
   "$VENV_ROOT/bin/python" -m pip install -e "$API_ROOT"
 fi
 
@@ -59,7 +59,6 @@ cleanup() {
   local status=$?
   trap - EXIT INT TERM
   stop_process "前端" "${WEB_PID:-}"
-  stop_process "Worker" "${WORKER_PID:-}"
   stop_process "API" "${API_PID:-}"
   exit "$status"
 }
@@ -69,26 +68,19 @@ trap cleanup EXIT
 
 (
   cd "$API_ROOT"
-  exec "$VENV_ROOT/bin/uvicorn" app.main:app --host 127.0.0.1 --port 8000
+  exec "$VENV_ROOT/bin/uvicorn" app.main:app --host 127.0.0.1 --port "$API_PORT"
 ) &
 API_PID=$!
 
 (
-  cd "$API_ROOT"
-  exec "$VENV_ROOT/bin/python" -m app.worker
-) &
-WORKER_PID=$!
-
-(
   cd "$WEB_ROOT"
-  exec npm run dev
+  VITE_API_TARGET="http://127.0.0.1:$API_PORT" exec npm run dev -- --port "$WEB_PORT"
 ) &
 WEB_PID=$!
 
-echo "Course Agent 已启动"
-echo "前端: http://127.0.0.1:5173"
-echo "API:  http://127.0.0.1:8000/docs"
-echo "Worker: course-agent-worker（无 HTTP 端口）"
+echo "AI Course Studio 脚手架已启动"
+echo "前端: http://127.0.0.1:$WEB_PORT"
+echo "API:  http://127.0.0.1:$API_PORT/docs"
 echo "按 Ctrl+C 停止"
 
-wait "$API_PID" "$WORKER_PID" "$WEB_PID"
+wait "$API_PID" "$WEB_PID"

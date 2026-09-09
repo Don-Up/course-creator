@@ -1,1 +1,1 @@
-"""AI Course Agent API."""
+"""Minimal FastAPI application for the training scaffold."""
