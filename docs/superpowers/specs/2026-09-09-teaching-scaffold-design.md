@@ -97,6 +97,11 @@ Python 仅保留 FastAPI、Pydantic、Uvicorn、Pytest 和 Ruff 所需依赖。�
 - 每个阶段只实现该阶段目标，避免提前引入后续 Agent 能力。
 - `.agents/skills/` 在课程生产、中文文本和 FastAPI 工作中的适用边界。
 
+最终还将提供一份技术实施文档。该文档以完整 Demo 为基线，记录模块级
+保留与删除映射、目标目录结构、最小 API 契约、依赖裁剪、迁移顺序和实际
+验证证据，供训练营维护者理解并复现本次脚手架改造。它不包含可直接复用的
+Agent 实现代码。
+
 ## 验收
 
 1. 不配置模型或 `.env` 即可运行 `bash scripts/start-agent.sh`。
@@ -107,6 +112,7 @@ Python 仅保留 FastAPI、Pydantic、Uvicorn、Pytest 和 Ruff 所需依赖。�
 6. 后端测试覆盖健康检查、课程列表和静态课程入口。
 7. 前端通过类型检查和生产构建。
 8. 仓库不包含可执行的 Agent、Provider、Run、Worker、SQLite、LangGraph 或质量闭环实现。
+9. 技术实施文档完整说明由完整 Demo 到教学薄脚手架的改造决策与验证证据。
 
 ## 非目标
 
