@@ -13,6 +13,7 @@ FastAPI 的最小运行链路，供学员按 `implementation-guide-20-lessons/` 
 - `courses/`：静态示例课程；`courses/catalog.json` 是示例课程列表的事实源。
 - `.agents/skills/`：版本化的领域与工程规则，必须整体保留。
 - `implementation-guide-20-lessons/`：训练营分阶段实施指引。
+- `assets/aiagent/`：存放当前项目的 PRD 和 FE-TD 和 BE-TD，根据任务类型按需读取。
 
 ## 分阶段约束
 
