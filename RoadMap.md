@@ -419,7 +419,10 @@ apps/api/.venv/bin/ruff check apps/api        # All checks passed
 
 **验收**
 ```bash
+# Linux / macOS
 apps/api/.venv/bin/python -m pytest apps/api/tests/test_config.py -v
+# Windows
+apps\api\.venv\Scripts\python.exe -m pytest apps/api/tests/test_config.py -v
 ```
 
 <details><summary>P0.2.1 · <code>Settings</code> 的 29 个字段（名称 · 类型 · 默认值）</summary>
@@ -482,7 +485,7 @@ def save_provider_preferences(payload: dict[str, Any], settings: Settings | None
     # path.parent.mkdir(parents=True, exist_ok=True)
     # 先写 path.with_suffix(".tmp")，再 os.replace(temporary, path)（原子替换）
     # 写完临时文件后 os.chmod(temporary, 0o600)——这个文件里存着 DeepSeek 密钥
-    # 写入内容用 json.dumps(next_value, ensure_ascii=False, indent=2)
+    # 写入内容用 json.dumps(merged, ensure_ascii=False, indent=2)
     # 返回合并后的完整 dict
 ```
 
