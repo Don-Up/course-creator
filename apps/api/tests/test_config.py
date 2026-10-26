@@ -156,3 +156,29 @@ def test_provider_preferences_file_is_written_with_restrictive_permissions(
     )
 
     assert stat.S_IMODE(preferences_path.stat().st_mode) == 0o600
+
+
+def test_env_example_covers_every_settings_field():
+    """Every variable in `.env.example` must map onto a `Settings` field.
+
+    The check is deliberately one-directional: the template only exposes the
+    handful of variables an operator needs, while the remaining `Settings`
+    fields are internal knobs that keep sane defaults.  It still catches the
+    two real failures -- a misspelled key in the template, and a `Settings`
+    field that was renamed without the template following.
+    """
+    template_path = Path(__file__).resolve().parents[1] / ".env.example"
+    template = template_path.read_text(encoding="utf-8")
+
+    keys = [
+        line.split("=", 1)[0].strip()
+        for line in template.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+    assert keys, ".env.example should declare at least one variable"
+
+    field_names = set(Settings.model_fields)
+    unknown = [key for key in keys if key.lower() not in field_names]
+
+    assert unknown == [], f"unknown Settings field(s) in .env.example: {unknown}"
