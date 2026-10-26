@@ -29,7 +29,7 @@ FastAPI 的最小运行链路，供学员按 `implementation-guide-20-lessons/` 
 - 前端使用 React + TypeScript。API 契约变更必须同步更新前端类型和测试。
 - 后端使用 FastAPI + Pydantic；路由按资源拆分，公开响应使用明确的返回类型或
   `response_model`。
-- Python 使用 Python 3.12、Ruff，单行最大 92 字符。
+- Python 使用 Python 3.12+（3.12 / 3.13 / 3.14 均可）、Ruff，单行最大 92 字符。
 - 使用 `apply_patch` 修改源码与文档；不要覆盖或回滚已有用户改动。
 - 输入路径必须规范化并限制在允许的课程目录内；初始脚手架不提供文件写入 API。
 - 优先使用标准库和已有依赖。新依赖必须对应当前阶段的明确需求。
@@ -54,7 +54,10 @@ npm --prefix apps/web run build
 涉及后端时运行：
 
 ```bash
+# Linux / macOS
 apps/api/.venv/bin/python -m pytest apps/api/tests
+# Windows
+apps\api\.venv\Scripts\python.exe -m pytest apps/api/tests
 ```
 
 变更启动或接口行为后，额外验证：

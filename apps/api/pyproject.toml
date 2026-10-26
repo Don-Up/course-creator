@@ -2,7 +2,7 @@
 name = "ai-course-agent-api"
 version = "0.1.0"
 description = "Minimal FastAPI scaffold for the AI Course Studio training camp"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12"
 dependencies = [
   "fastapi==0.139.2",
   "pydantic==2.13.4",

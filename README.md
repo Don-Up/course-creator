@@ -33,7 +33,7 @@
 前置条件：
 
 - Node.js 20+
-- Python 3.12
+- Python 3.12+（3.12 / 3.13 / 3.14 均可）
 
 运行：
 
@@ -65,6 +65,7 @@ curl http://127.0.0.1:8000/api/courses
 ## 开发验证
 
 ```bash
+# 后端测试：Linux / macOS 用 .venv/bin，Windows 用 .venv\Scripts
 apps/api/.venv/bin/python -m pytest apps/api/tests
 npm --prefix apps/web run typecheck
 npm --prefix apps/web run build
