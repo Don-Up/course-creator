@@ -399,6 +399,7 @@ apps/api/.venv/bin/ruff check apps/api        # All checks passed
 **步骤**
 - [ ] 写 `test_config.py::test_settings_paths_derive_from_repo_root`，断言 `settings.courses_root == settings.repo_root / "courses"`、`settings.data_root.name == ".course-agent"`
 - [ ] 写 `test_config.py::test_settings_defaults_are_safe`，断言 `llm_provider == "codex_gateway"`、`llm_model == "llm-gateway--kimi-k3"`、`llm_timeout_seconds == 90`、`worker_lease_seconds == 45`
+- [ ] **默认值测试必须与环境隔离**：该测试要构造 `Settings(_env_file=None)`（跳过 `apps/api/.env` 与 `.env`），并对上面 4 个键用 `monkeypatch.delenv(<键>, raising=False)` 清掉 shell 里导出的同名环境变量。原因：`_env_file=None` **只屏蔽 .env 文件**，shell 里导出的 `LLM_PROVIDER` 之类仍会盖掉默认值；少了这一步，一个开发者本地建了 `apps/api/.env` 就会让这条测试变红。
 - [ ] 跑 `pytest apps/api/tests/test_config.py -v` → FAIL（`ModuleNotFoundError: app.config`）
 - [ ] 实现 `app/config.py`：`class Settings(BaseSettings)`，`model_config = SettingsConfigDict(env_file=(".env", "apps/api/.env"), extra="ignore")`
 - [ ] 按下方附录 P0.2.1 写入 **29 个字段**（名称 · 类型 · 默认值逐字照抄）
@@ -407,6 +408,11 @@ apps/api/.venv/bin/ruff check apps/api        # All checks passed
 - [ ] 写 `test_config.py::test_provider_preferences_round_trip`：`save` → `get` 读回同一个 `tmp_path` 文件
 - [ ] 写 `test_config.py::test_provider_preferences_never_erase_key`：payload 里 `deepseek_api_key` 为空白 → 磁盘上的旧值**保持不变**
 - [ ] 写 `test_config.py::test_provider_preferences_fall_back_on_corrupt_file`：文件内容不是合法 JSON → 返回默认值，**不抛异常**
+      （同一个测试里再覆盖**非 UTF-8 字节**的文件：读文件时的 `UnicodeDecodeError` 也必须被吞掉，同样返回默认值。
+      「不抛异常」是契约，不是「不抛 JSONDecodeError」。）
+- [ ] 写 `test_config.py::test_provider_preferences_missing_file_returns_defaults`：文件**根本不存在** → 返回默认值，**不抛异常**
+- [ ] 写 `test_config.py::test_provider_preferences_file_is_written_with_restrictive_permissions`：断言落盘文件的
+      `stat.S_IMODE(...) == 0o600`；**在 Windows 上跳过**（Windows 的 `os.chmod` 只切换只读属性，产生不了 POSIX 权限位）
 - [ ] **测试隔离**：`provider_preferences_path` 必须指向 `tmp_path`，**绝不允许**写进仓库真实的 `.course-agent/`（用 `monkeypatch.setattr(Settings, "provider_preferences_path", ...)` 打桩）
 - [ ] 再跑 → PASS
 - [ ] 提交：`git commit -m "feat: 建立 Settings 配置系统"`
@@ -475,6 +481,8 @@ def save_provider_preferences(payload: dict[str, Any], settings: Settings | None
     # deepseek_api_key 传空白字符串 → **不写入**（UI 里的空输入 = 保留旧密钥，不是擦除）
     # path.parent.mkdir(parents=True, exist_ok=True)
     # 先写 path.with_suffix(".tmp")，再 os.replace(temporary, path)（原子替换）
+    # 写完临时文件后 os.chmod(temporary, 0o600)——这个文件里存着 DeepSeek 密钥
+    # 写入内容用 json.dumps(next_value, ensure_ascii=False, indent=2)
     # 返回合并后的完整 dict
 ```
 
@@ -491,16 +499,22 @@ def save_provider_preferences(payload: dict[str, Any], settings: Settings | None
 
 **文件**
 - Create: `apps/api/.env.example`
+- Modify: `apps/api/tests/test_config.py`（P0.2 建的那个文件，本任务往里加一条测试）
 
 **接口**
 - Consumes: P0.2 的 `Settings` 字段名
 - Produces: `.env.example` 内容（见下方附录 P0.3.1）
 
 **步骤**
-- [ ] 按下方附录 P0.3.1 逐行写入 `apps/api/.env.example`
-- [ ] 写 `test_config.py::test_env_example_covers_every_settings_field`：读 `.env.example`，断言**模板里的每个 key 都是一个 `Settings` 字段名**（`LLM_PROVIDER` → `llm_provider`）
-- [ ] 跑测试 → PASS
+- [ ] 先写 `test_config.py::test_env_example_covers_every_settings_field`：读 `.env.example`，断言**模板里的每个 key 都是一个 `Settings` 字段名**（`LLM_PROVIDER` → `llm_provider`）。
+      模板路径用测试文件自身定位：`Path(__file__).resolve().parents[1] / ".env.example"`（`parents[1]` = `apps/api/`）。
+      解析模板时跳过空行和以 `#` 开头的注释行，取每行 `=` 左边当 key。
+- [ ] 跑测试 → **FAIL**（`.env.example` 还不存在）
+- [ ] 按下方附录 P0.3.1 逐行写入 `apps/api/.env.example`（**逐字照抄，包括 2 行注释**）
+- [ ] 再跑 → **PASS**
 - [ ] 提交：`git commit -m "chore: 提供环境变量模板"`
+      **提交时 `git add` 这两个路径**：`apps/api/.env.example` 和 `apps/api/tests/test_config.py`。
+      不要用 `git add -A` / `git add .`。
 
 > ⚠️ 断言方向是**单向**的（模板 ⊆ 字段），不是双向。P0.2 定义了 29 个字段，
 > 而模板只有 9 个变量——剩下 20 个是内部旋钮（各类超时、max_output_tokens、
@@ -510,7 +524,10 @@ def save_provider_preferences(payload: dict[str, Any], settings: Settings | None
 
 **验收**
 ```bash
+# Linux / macOS
 apps/api/.venv/bin/python -m pytest apps/api/tests/test_config.py -v
+# Windows
+apps\api\.venv\Scripts\python.exe -m pytest apps/api/tests/test_config.py -v
 ```
 
 <details><summary>P0.3.1 · <code>.env.example</code> 精确内容</summary>
@@ -588,17 +605,27 @@ npm run test:contract
 - Produces: `node scripts/check-source-size.mjs`（退出码 0 = 通过）；`pytest::test_production_source_size_gate_passes`
 
 **步骤**
-- [ ] 写 `test_source_size.py::test_production_source_size_gate_passes`：从仓库根跑 `["node", "scripts/check-source-size.mjs"]`，断言 `returncode == 0`
+- [ ] 写 `test_source_size.py::test_production_source_size_gate_passes`：用 `subprocess.run(["node", "scripts/check-source-size.mjs"], cwd=repo_root, capture_output=True, text=True, check=False)` 跑，断言 `returncode == 0`。
+      **`repo_root` 从测试文件自身定位**：`Path(__file__).resolve().parents[3]`（`parents[3]` = 仓库根，因为本文件在 `apps/api/tests/`）。
+      **必须传 `cwd=repo_root`** —— 这样无论从哪个目录调用 pytest，测试都能过。
 - [ ] 跑测试 → FAIL（脚本不存在）
 - [ ] 实现 `scripts/check-source-size.mjs`（语义见下方附录 P0.5.1）
 - [ ] 再跑 → PASS
-- [ ] **手工验证门禁真的会拦**：临时在 `apps/api/app/` 造一个 501 行的 `.py`，跑测试 → 必须 FAIL；删掉临时文件
+- [ ] **手工验证门禁真的会拦**：临时在 `apps/api/app/` 造一个 501 行的 `.py`，跑测试 → 必须 FAIL；**删掉临时文件**
+      （临时文件请写成**合法的 Python**（比如重复同一行注释），否则 `ruff check apps/api` 会因为它报错；
+      或者在做 Ruff 检查之前就把它删掉。）
+- [ ] **确认没有留下任何临时文件**：`git status --short` 必须是干净的（临时文件是未跟踪状态，留着就会混进提交）
 - [ ] 提交：`git commit -m "chore: 建立生产源码行数门禁"`
+      **提交时 `git add` 这两个路径**：`scripts/check-source-size.mjs` 和 `apps/api/tests/test_source_size.py`。
+      不要用 `git add -A` / `git add .`。
 
 **验收**
 ```bash
 node scripts/check-source-size.mjs
+# Linux / macOS
 apps/api/.venv/bin/python -m pytest apps/api/tests/test_source_size.py -v
+# Windows
+apps\api\.venv\Scripts\python.exe -m pytest apps/api/tests/test_source_size.py -v
 ```
 
 <details><summary>P0.5.1 · <code>check-source-size.mjs</code> 精确语义</summary>
@@ -613,6 +640,17 @@ const extensions = new Set([".py", ".ts", ".tsx", ".css"]);
 - **扫描范围精确为两个根目录**：`apps/api/app` 与 `apps/web/src`；
   **扩展名精确为四个**：`.py / .ts / .tsx / .css`。
   `.mjs / .js / .json / .md` **不检查**；`apps/web/tests/`、`apps/api/tests/`、`scripts/`、`tests/` **不检查**。
+- **必须递归遍历子目录**：两个根下面都有子目录（`apps/api/app/api/course_routes.py`、
+  `apps/web/src/components/layout.tsx`），只扫一层会漏掉它们。
+  判断文件类型用 `entry.isDirectory()` 递归、`extensions.has(扩展名)` 过滤。
+- **某个根目录不存在时跳过它**（当作 0 个文件），不要因为 `readdir` 抛 ENOENT 而崩溃。
+  目标版在这里没有防护（它会直接抛异常），这是本仓库刻意做的一处加固：门禁脚本因为
+  目录缺失而崩掉，输出的是一堆栈，不是"哪里超了 500 行"。
+- **仓库根从脚本自身位置推导**，不要用 `process.cwd()`：
+  `fileURLToPath(import.meta.url)` → `scripts/` 的上一级就是仓库根。
+  然后 `sourceRoots` 按这个仓库根拼成绝对路径，输出路径用 `relative(repoRoot, file)`。
+  这样从任何目录运行脚本都能扫到正确的目录、打印出的路径也始终是**相对仓库根**的
+  （`npm run check:source-size` 会把 cwd 设成包根，所以常规用法下输出与用 `process.cwd()` 完全一样）。
 - 违规时打印 `Production source files must not exceed 500 lines:`，
   随后按行数降序列出 `- <相对路径>: <行数>`，并 `process.exitCode = 1`。
 - 通过时打印 `Source size check passed (N files, <= 500 lines each).`
@@ -623,20 +661,29 @@ const extensions = new Set([".py", ".ts", ".tsx", ".css"]);
 **产出**：敏感目录不进 Git；前端 9 个新依赖就位。
 
 **文件**
-- Modify: `.gitignore`
+- Modify: `.gitignore`（**预期无需改动** —— 见下方说明）
 - Modify: `apps/web/package.json`
+- Modify: `apps/web/package-lock.json`（`npm install` 会重写它，**必须一起提交**）
 
 **接口**
 - Consumes: P0.1
-- Produces: 忽略项 `.course-agent/` · `.venv/` · `node_modules/` · `.pytest_cache/` · `apps/api/.env`；前端依赖 `@tanstack/react-query@5.101.2` · `@xyflow/react@^12.11.2` · `framer-motion@12.38.0` · `lucide-react@0.468.0` · `mermaid@^11.16.0` · `react-markdown@10.1.0` · `react-syntax-highlighter@^16.1.1` · `remark-gfm@4.0.1` · `@types/react-syntax-highlighter`（**放 `devDependencies`**）
+- Produces: 忽略项 `.course-agent/` · `.venv/` · `node_modules/` · `.pytest_cache/` · `apps/api/.env`；前端依赖 `@tanstack/react-query@5.101.2` · `@xyflow/react@^12.11.2` · `framer-motion@12.38.0` · `lucide-react@0.468.0` · `mermaid@^11.16.0` · `react-markdown@10.1.0` · `react-syntax-highlighter@^16.1.1` · `remark-gfm@4.0.1` · `@types/react-syntax-highlighter@^15.5.13`（**放 `devDependencies`**）
 
 **步骤**
-- [ ] 确认 `.gitignore` 含上面 5 类忽略项；**保留当前仓库额外的 `.docs/specs/`**（目标版把它删了）
+- [ ] 确认 `.gitignore` 含上面 5 类忽略项；**保留当前仓库额外的 `.docs/specs/`**（目标版把它删了）。**当前 `.gitignore` 已经全部覆盖这 5 类，预期 `.gitignore` 没有任何改动** —— 只需验证并在报告里写明「已覆盖，无须改动」，不要为了"有改动"而乱改它。
 - [ ] 在 `apps/web/package.json` 的 `dependencies` 写入 8 个运行时依赖；在 `devDependencies` 写入 `@types/react-syntax-highlighter`
-- [ ] 跑 `npm --prefix apps/web install` → 无冲突
+- [ ] 跑 `cd apps/web && npm install --offline` → 无冲突
+  （**必须先 `cd` 进 `apps/web`**：`npm --prefix apps/web install` 会从当前目录向上找 `package.json`，在本仓库布局下会失败退出；`npm --prefix apps/web run typecheck` 这种 `run` 形式则是可以的。）
+  （**用 `--offline`**：这 9 个包连同它们的全部传递依赖都已经在本机 npm 缓存里，
+  `--offline` 强制 npm 只从缓存取、完全不联网、不碰任何远端包源。
+  生成的 `package-lock.json` 与联网安装产生的是同一个文件 —— `resolved` / `integrity`
+  都由缓存里那份 packument 决定，与是否联网无关。）
 - [ ] 跑 `npm --prefix apps/web run typecheck` → 0 error
 - [ ] `git status --short` → 确认 `.venv/`、`node_modules/` 不出现
 - [ ] 提交：`git commit -m "chore: 补齐前端依赖与忽略规则"`
+  **提交时要 `git add` 这三个路径**：`apps/web/package.json`、`apps/web/package-lock.json`、以及（若有改动的）`.gitignore`。
+  `apps/web/package-lock.json` 已经被上一轮提交纳入版本控制，`npm install` 一定会重写它 —— 不提交就会留下一个脏工作树，且锁文件和清单对不上。
+  **不要用 `git add -A` / `git add .`**，只按路径显式 `git add`。
 
 **验收**
 ```bash
