@@ -281,8 +281,8 @@
 | P0.6 | 更新 `.gitignore` 与前端依赖 | 敏感目录不进 Git；9 个前端依赖到位 | P0.1 |
 | **Phase 1 · 七步 Happy Path V0** ||||
 | P1.1 | 定义七阶段契约常量 | `WORKFLOW_STEPS` + `STEP_ORDER` | P0.2 |
-| P1.2 | 定义 Agent Protocol | 17 个方法签名（仅协议，无实现） | P1.1 |
-| P1.3 | 实现 FakeProvider | 确定性输出 + 可触发失败 | P1.2 |
+| P1.2 | 定义 Agent Protocol | 10 个方法签名（仅协议，无实现） | P1.1 |
+| P1.3 | 实现 FakeProvider | 13 个输出 Schema + 确定性输出 + 可触发失败 | P1.2 |
 | P1.4 | 建立路径护栏与原子写 | `_safe_course_root` / `_safe_child` | P0.2 |
 | P1.5 | 实现课程脚手架创建 | 建目录 + `course.json` | P1.4 |
 | P1.6 | 实现课程目录扫描与课程门面 | `list_courses()` / `get_course()` | P1.5 |
@@ -888,30 +888,273 @@ class CourseAgent(Protocol):
 
 #### P1.3 · 实现 FakeProvider
 
-**产出**：一个不需要密钥、不联网、输出确定、且**能按需制造失败**的 Agent 实现。
+**产出**：一个不需要密钥、不联网、输出确定、且**能按需制造失败**的 Agent 实现；顺带落地第一批输出 Schema，让 `FakeProvider` 的返回值是**真类型**而不是裸 `dict`。
 
 **文件**
+- Create: `apps/api/app/schemas.py`
 - Create: `apps/api/app/agents/fake_runtime.py`
 - Create: `apps/api/app/agents/runtime.py`
+- Modify: `apps/api/app/agents/protocols.py`（补 9 个类型 import、删 9 个 `# noqa: F821`、加 `@runtime_checkable`、订正模块 docstring）
+- Create: `apps/api/tests/test_schemas.py`
 - Create: `apps/api/tests/test_fake_runtime.py`
 
 **接口**
 - Consumes: P1.2
-- Produces: `class FakeProvider`（实现 `CourseAgent`）；`create_course_agent(provider_name=None, model_name=None) -> CourseAgent`
+- Produces:
+  - `app/schemas.py` 的 **13 个**模型（附录 P1.3.1）：`MissionOutput` · `ChapterPlan` · `ModulePlan` · `BlueprintOutput` · `ResearchPlanOutput` · `CuratedSource` · `ResearchCurationOutput` · `HumanizerOutput` · `RepairTaskVerification` · `SemanticReviewOutput` · `ContinuityOutput` · `RepairCapabilityPlan` · `OutputPresentation`
+  - `class FakeProvider`：`name = "fake"`，实现 P1.2 的 **10 个**方法（其余 7 个方法在 P3.8 随 Schema 一起补齐）
+  - `create_course_agent(provider_name: str | None = None, model_name: str | None = None) -> CourseAgent`
 
 **步骤**
-- [ ] 写测试：`humanize()` 返回 `score == 47`；`semantic_review()` 返回 `decision == "ready"`；`create_blueprint()` 返回**最多 4 章**
-- [ ] 写测试：**失败路径可控** —— 构造 `FakeProvider(fail_at="generation")` 时 `generate_chapter()` 抛 `RuntimeError`；`fail_at="humanize"` 时 `humanize()` 返回 `score == 30`
+- [ ] 写测试 `test_schemas.py`：`HumanizerOutput(score=30)` 合法、`HumanizerOutput(score=51)` 抛 `ValidationError`；`SemanticReviewOutput(score=90, decision="ready")` 合法、`decision="maybe"` 抛 `ValidationError`；`BlueprintOutput` 缺 `course_title` 抛 `ValidationError`
+- [ ] 写测试 `test_fake_runtime.py`：`humanize()` 返回 `score == 47`；`semantic_review()` 返回 `decision == "ready"` 且 `score == 90`；`create_blueprint()` 返回**最多 4 章**（`preferred_chapter_count=12` → 4 章；`preferred_chapter_count=2` → 2 章；不传 → 4 章）
+- [ ] 写测试：**失败路径可控** —— `FakeProvider(fail_at="generation")` 时 `generate_chapter()` 抛 `RuntimeError`；`FakeProvider(fail_at="humanize")` 时 `humanize()` 返回 `score == 30`（**合法**输出，不是异常）
 - [ ] 写测试：同一个 `FakeProvider` 连续两次调用 `create_blueprint()` 返回**完全相同**的内容
+- [ ] 写测试：工厂 `create_course_agent("fake")` 返回 `FakeProvider` 且 `isinstance(agent, CourseAgent) is True`；`create_course_agent("FAKE")` 同样返回 `FakeProvider`；`create_course_agent("codex_gateway")` 与 `create_course_agent()` 抛 `NotImplementedError`
+- [ ] 写测试：`FakeProvider(fail_at="nope")` 抛 `ValueError`
 - [ ] 跑测试 → FAIL
-- [ ] 实现 `fake_runtime.py` 与 `runtime.py`（`runtime.py` 只做工厂：`fake` → `FakeProvider`，其他 → 后续阶段接）
+- [ ] 实现 `app/schemas.py`：**只写**附录 P1.3.1 的 13 个模型，**不要**加 `CourseCreate`（P1.5 才加）或 P3.8 的其余 Schema
+- [ ] 实现 `fake_runtime.py`：`FakeProvider` 写 P1.2 的 10 个方法，返回值全部是 `app.schemas` 里的模型
+- [ ] 实现 `runtime.py`：只做工厂（契约见附录 P1.3.2）
+- [ ] 改 `protocols.py`：按附录 P1.3.3 补 import、删 `# noqa: F821`、加 `@runtime_checkable`
 - [ ] 再跑 → PASS
 - [ ] 提交：`git commit -m "feat: 实现 FakeProvider"`
 
 **验收**
 ```bash
-apps/api/.venv/bin/python -m pytest apps/api/tests/test_fake_runtime.py -v
+# Linux / macOS
+apps/api/.venv/bin/python -m pytest apps/api/tests/test_fake_runtime.py apps/api/tests/test_schemas.py -v
+# Windows
+apps\api\.venv\Scripts\python.exe -m pytest apps/api/tests/test_fake_runtime.py apps/api/tests/test_schemas.py -v
+npm run check:source-size
 ```
+
+<details><summary>P1.3.1 · <code>app/schemas.py</code> 的 13 个输出模型（字段级契约）</summary>
+
+模块顶部写 `from __future__ import annotations`，只 `from typing import Literal`（**不要** import `Any`——
+本阶段没有用到它的模型）。每个模型都是一个 `pydantic.BaseModel`，字段如下（逐字段照抄，**不要**增删）：
+
+```python
+class MissionOutput(BaseModel):
+    mission_markdown: str
+    assumptions: list[str] = Field(default_factory=list)
+
+
+class ChapterPlan(BaseModel):
+    number: int
+    title: str
+    learning_outcome: str
+    prerequisites: list[str] = Field(default_factory=list)
+    continuity_in: list[str] = Field(default_factory=list)
+    continuity_out: list[str] = Field(default_factory=list)
+    pedagogy_type: Literal[
+        "opening_closing",
+        "environment",
+        "language",
+        "framework",
+        "mechanism",
+        "integrated_practice",
+    ] = "language"
+    primary_teaching_task: str = "概念讲解"
+    instructor_voice: str = "耐心教练型"
+    learning_path: list[str] = Field(default_factory=list)
+    template_modules: list[str] = Field(default_factory=list)
+
+
+class ModulePlan(BaseModel):
+    title: str
+    goal: str
+    narrative: str
+    chapters: list[ChapterPlan]
+
+
+class BlueprintOutput(BaseModel):
+    course_title: str
+    modules: list[ModulePlan]
+    design_notes: list[str] = Field(default_factory=list)
+
+
+class ResearchPlanOutput(BaseModel):
+    queries: list[str] = Field(default_factory=list)
+    search_rationale: str = ""
+
+
+class CuratedSource(BaseModel):
+    title: str
+    url: str
+    reason: str
+    source_type: Literal["official", "standard", "paper", "community"] = "official"
+
+
+class ResearchCurationOutput(BaseModel):
+    sources: list[CuratedSource] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class HumanizerOutput(BaseModel):
+    revised_markdown: str
+    score: int = Field(ge=0, le=50)
+    issues: list[str] = Field(default_factory=list)
+
+
+class RepairTaskVerification(BaseModel):
+    task_id: str
+    resolved: bool
+    evidence_excerpt: str = Field(default="", max_length=1200)
+    reason: str = Field(default="", max_length=800)
+
+
+class SemanticReviewOutput(BaseModel):
+    score: int = Field(ge=0, le=100)
+    decision: Literal["ready", "manual_review", "reject"]
+    issues: list[str] = Field(default_factory=list)
+    strengths: list[str] = Field(default_factory=list)
+    repair_verifications: list[RepairTaskVerification] = Field(default_factory=list)
+
+
+class ContinuityOutput(BaseModel):
+    summary: str
+    established_terms: list[str] = Field(default_factory=list)
+    established_facts: list[str] = Field(default_factory=list)
+    open_loops: list[str] = Field(default_factory=list)
+    bridge_to_next: list[str] = Field(default_factory=list)
+
+
+class RepairCapabilityPlan(BaseModel):
+    task_id: str
+    scope: Literal["paragraph", "section", "chapter"] = "section"
+    selected_capabilities: list[
+        Literal[
+            "markdown_format",
+            "link_reference",
+            "code_structure",
+            "teaching_scaffold",
+            "source_contract",
+            "content_enrichment",
+            "humanizer",
+            "section_rewrite",
+            "chapter_rewrite",
+        ]
+    ] = Field(default_factory=list, max_length=4)
+    target_anchors: list[str] = Field(default_factory=list, max_length=6)
+    reasoning_summary: str = Field(min_length=1, max_length=800)
+    verification_plan: list[str] = Field(default_factory=list, max_length=6)
+
+
+class OutputPresentation(BaseModel):
+    headline: str
+    conclusion: str
+    highlights: list[str] = Field(default_factory=list)
+    metrics: dict[str, str | int | float | bool] = Field(default_factory=dict)
+    issues: list[str] = Field(default_factory=list)
+    next_action: str = ""
+```
+
+> `CourseCreate`（P1.5）、`WorkspacePatch` / `WorkspaceRevisionOutput` /
+> `WorkspaceConsistencyOutput` / `HumanizerPatch` / `HumanizerPatchOutput` /
+> `ReferenceSectionCandidate` / `ReferenceSectionDecision` / `RepairTextPatch` /
+> `RepairPatchOutput` / `SectionRewriteOutput` / `EventPayload`（P3.8）**本阶段一律不写**。
+
+</details>
+
+<details><summary>P1.3.2 · <code>FakeProvider</code> 与工厂的行为契约</summary>
+
+**输入契约**（缺键 → `KeyError`，不要用默认值兜底——fake 的输入面是刻意收紧的）：
+
+| 方法 | 必需输入 | 可选输入 |
+| --- | --- | --- |
+| `create_mission(request)` | `request["title"]` · `request["audience"]` · `request["goals"]` · `request["scope"]` · `request["source_policy"]` | — |
+| `create_blueprint(request, mission)` | `request["title"]` | `request["preferred_chapter_count"]`（默认 `4`） |
+| `plan_research(request, mission)` | `request["title"]` | — |
+| `curate_research(policy, candidates)` | — | `candidates["results"]`（缺 → 空列表） |
+| `generate_chapter(context)` | `context["chapter"]["title"]` · `context["chapter"]["learning_outcome"]` | `context["chapter"]["continuity_in"]` / `["continuity_out"]` |
+| `humanize(markdown)` | `markdown` | — |
+| `semantic_review(markdown, context)` | — | — |
+| `extract_continuity(markdown, context)` | — | `context["chapter"]`（缺 → 用兜底值） |
+| `plan_repair(task, markdown, context)` | — | `task["id"]`（缺 → `"fake"`） |
+| `present_output(step, label, output)` | `label` · `output` | `step`（本阶段**不**做特殊分支） |
+
+**输出契约**：
+
+- `create_mission()` → `mission_markdown` 以 `# {title}：课程任务定义` 开头，且含二级标题 `## 目标受众` ·
+  `## 学习成果` · `## 内容范围` · `## 来源政策` · `## 交付与审核`；`assumptions == ["Fake Provider 演示输出"]`
+- `create_blueprint()` → 章节数 `count = min(int(request.get("preferred_chapter_count", 4)), 4)`，
+  **上限 4**；`course_title == request["title"]`；`modules` 恰好 1 个，`modules[0].title == "模块一：Fake Provider 演示模块"`；
+  `design_notes == ["Fake Provider 仅用于本地演示，真实内容生成需要配置模型 Provider"]`
+- `plan_research()` → `queries == [f"{request['title']} official documentation"]`；`search_rationale` 以 `Fake Provider` 开头
+- `curate_research()` → `candidates` 无 `results` 时 `sources == []` 且 `notes == ["未获得可用网页候选。"]`；
+  有 `results` 时 `sources` 恰好 1 条，取 `results[0]` 的 `title`（空则 `"检索结果"`）与 `url`，`source_type == "official"`
+- `generate_chapter()` → 返回 markdown 以 `# {chapter['title']}` 开头，且含二级标题 `## 本章任务`
+- `humanize()` → `HumanizerOutput(revised_markdown=markdown, score=47, issues=[])`
+- `semantic_review()` → `score == 90`、`decision == "ready"`、`issues == []`、`strengths` 恰好 1 条
+- `extract_continuity()` → `summary` 取 `chapter.get("learning_outcome", "Fake Provider 章节")`；
+  `established_facts` 恰好 1 条；`bridge_to_next` 取 `chapter.get("continuity_out", [])`
+- `plan_repair()` → `task_id == str(task.get("id", "fake"))`；`selected_capabilities == ["teaching_scaffold"]`；
+  `target_anchors` 恰好 1 条；`verification_plan` 恰好 1 条；`reasoning_summary` 非空
+- `present_output()` → `headline == f"{label}已完成"`；`highlights` 是 `output` 的**前 5 个**键（形如 `产出字段：{key}`）；
+  `metrics == {"产出字段数": len(output)}`；`conclusion` 与 `next_action` 非空
+
+**`fail_at` 失败注入**（`FakeProvider(fail_at=...)`，默认 `None` = 不注入失败）：
+
+| `fail_at` | 触发的方法 | 行为 |
+| --- | --- | --- |
+| `"create_mission"` | `create_mission()` | 抛 `RuntimeError` |
+| `"create_blueprint"` | `create_blueprint()` | 抛 `RuntimeError` |
+| `"plan_research"` | `plan_research()` | 抛 `RuntimeError` |
+| `"curate_research"` | `curate_research()` | 抛 `RuntimeError` |
+| `"generation"`（别名）或 `"generate_chapter"` | `generate_chapter()` | 抛 `RuntimeError` |
+| `"humanize"` | `humanize()` | **不抛异常**，返回 `HumanizerOutput(revised_markdown=markdown, score=30, issues` 恰好 1 条`)` |
+| `"semantic_review"` | `semantic_review()` | 抛 `RuntimeError` |
+| `"extract_continuity"` | `extract_continuity()` | 抛 `RuntimeError` |
+| `"plan_repair"` | `plan_repair()` | 抛 `RuntimeError` |
+| `"present_output"` | `present_output()` | 抛 `RuntimeError` |
+
+- 抛 `RuntimeError` 时，消息固定为 `f"FakeProvider failed at {method_name}."`（`method_name` 是**方法名**，
+  所以 `"generation"` 别名报的是 `FakeProvider failed at generate_chapter.`）
+- `humanize` 是唯一**降级**而不是抛异常的一档：低分（30/50）是一个**合法但质量差**的输出，
+  正好用来触发质量闭环，而不是把流程直接打断
+- **其他任何 `fail_at` 值 → 构造时抛 `ValueError`**
+
+**工厂 `create_course_agent(provider_name=None, model_name=None)`**：
+
+- `provider_name` 为 `None` → 抛 `NotImplementedError`
+- `provider_name.lower() == "fake"` → 返回 `FakeProvider()`
+- 其他任何值 → 抛 `NotImplementedError`，消息固定为
+  `f"Provider {provider_name!r} is not available in Phase 1; only 'fake' is implemented."`
+- `model_name` 本阶段**保留但忽略**（fake 没有模型概念）
+
+> **为什么默认也抛 `NotImplementedError`：** 本阶段**没有**真实 Provider——
+> `AGENTS.md` 明确规定「未进入相应阶段前，不得提前加入 LLM Provider」。
+> 参考实现会 fallback 到真实 Provider，但那条路在 Phase 1 还不存在，
+> 照抄会让 `create_course_agent()` 变成一个永远走不通的假入口。
+
+</details>
+
+<details><summary>P1.3.3 · <code>app/agents/protocols.py</code> 的改动清单</summary>
+
+P1.2 冻结协议时故意**没有** import 那些输出类型（它们当时还不存在），代价是 9 处
+`# noqa: F821`。P1.3 建好 `app/schemas.py` 之后，这些标记必须收掉：
+
+1. `from typing import Protocol` 改成 `from typing import Protocol, runtime_checkable`
+2. 加上 `from app.schemas import (BlueprintOutput, ContinuityOutput, HumanizerOutput,
+   MissionOutput, OutputPresentation, RepairCapabilityPlan, ResearchCurationOutput,
+   ResearchPlanOutput, SemanticReviewOutput)`（9 个名字，一个不多一个不少）
+3. **删掉 9 处 `# noqa: F821`**（`MissionOutput` · `BlueprintOutput` · `ResearchPlanOutput` ·
+   `ResearchCurationOutput` · `HumanizerOutput` · `SemanticReviewOutput` ·
+   `ContinuityOutput` · `RepairCapabilityPlan` · `OutputPresentation`）
+4. `class CourseAgent(Protocol):` 改成 `@runtime_checkable` 装饰的
+   `class CourseAgent(Protocol):`
+5. 订正模块 docstring：把「这些类型是 P3.8 随 `app/schemas.py` 一起创建的」改成
+   「这些类型由 P1.3 的 `app/schemas.py` 提供，P3.8 随其余 Schema 补齐剩余 7 个方法」；
+   删掉「P3.8 replaces those markers with the real import」那句
+
+> **`@runtime_checkable` 为什么现在加：** P1.3 第一次出现真实实现类，
+> `isinstance(provider, CourseAgent)` 是「FakeProvider 实现了 CourseAgent」这条承诺
+> 最直接的证据。注意它**只**支持 `isinstance`，**不支持** `issubclass`——
+> `CourseAgent` 有 `name` 这个非方法成员，`issubclass(X, CourseAgent)` 会抛 `TypeError`。
+> 测试里要用 `isinstance`，不要用 `issubclass`。
+
+</details>
 
 #### P1.4 · 建立路径护栏与原子写
 
