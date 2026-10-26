@@ -38,7 +38,9 @@ def test_settings_paths_derive_from_repo_root():
     assert settings.data_root.name == ".course-agent"
     assert settings.database_path.parent == settings.data_root
     assert settings.checkpoint_path.parent == settings.data_root
-    assert settings.provider_preferences_path == settings.data_root / "provider-settings.json"
+    assert (
+        settings.provider_preferences_path == settings.data_root / "provider-settings.json"
+    )
 
 
 def test_settings_defaults_are_safe(monkeypatch: pytest.MonkeyPatch):

@@ -132,7 +132,10 @@ def get_provider_preferences(settings: Settings | None = None) -> dict[str, Any]
     if not path.exists():
         return defaults
     stored = _read_stored_preferences(path)
-    return {**defaults, **{key: value for key, value in stored.items() if value is not None}}
+    return {
+        **defaults,
+        **{key: value for key, value in stored.items() if value is not None},
+    }
 
 
 def save_provider_preferences(
