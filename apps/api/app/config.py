@@ -111,7 +111,8 @@ def _read_stored_preferences(path: Path) -> dict[str, Any]:
     """Read the stored preferences; an unreadable or malformed file yields `{}`."""
     try:
         raw = path.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
+        # A file that cannot even be decoded is not parseable JSON either.
         return {}
     try:
         stored = json.loads(raw)
@@ -141,8 +142,10 @@ def save_provider_preferences(
     """Persist the provider preferences locally and return the merged result.
 
     The file holds the DeepSeek API key, so it stays local (`.course-agent/` is
-    git-ignored) and is written through a temporary file with restrictive
-    permissions before being atomically moved into place.
+    git-ignored) and is written through a temporary file that is then moved
+    into place atomically.  `os.chmod(0o600)` restricts the file to its owner
+    on POSIX; on Windows it can only clear the read-only flag, so the
+    directory ACL still governs who may read it.
     """
     if settings is None:
         settings = get_settings()
@@ -172,6 +175,8 @@ def save_provider_preferences(
         json.dumps(merged, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    # Owner-only on POSIX; on Windows `os.chmod` can only clear the read-only
+    # flag, so the directory ACL still decides who can read the key.
     os.chmod(temporary, 0o600)
     os.replace(temporary, path)
     return merged

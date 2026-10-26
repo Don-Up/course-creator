@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import stat
+import sys
 from pathlib import Path
 
 import pytest
@@ -118,3 +120,39 @@ def test_provider_preferences_fall_back_on_corrupt_file(preferences_path: Path):
 
     assert result["provider"] == settings.llm_provider
     assert result["model"] == settings.llm_model
+
+    # A file whose bytes are not valid UTF-8 cannot be parsed as JSON either.
+    preferences_path.write_bytes(b"\xff\xfe not utf-8")
+
+    result = get_provider_preferences(settings)
+
+    assert result["provider"] == settings.llm_provider
+    assert result["model"] == settings.llm_model
+
+
+def test_provider_preferences_missing_file_returns_defaults(preferences_path: Path):
+    settings = Settings(_env_file=None)
+
+    assert not preferences_path.exists()
+
+    result = get_provider_preferences(settings)
+
+    assert result["provider"] == settings.llm_provider
+    assert result["model"] == settings.llm_model
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Windows os.chmod only toggles the read-only flag, not POSIX mode bits",
+)
+def test_provider_preferences_file_is_written_with_restrictive_permissions(
+    preferences_path: Path,
+):
+    settings = Settings(_env_file=None)
+
+    save_provider_preferences(
+        {"provider": "deepseek", "model": "deepseek-chat"},
+        settings,
+    )
+
+    assert stat.S_IMODE(preferences_path.stat().st_mode) == 0o600
