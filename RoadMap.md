@@ -820,23 +820,27 @@ npm run check:source-size
 **产出**：Agent 的能力边界先以协议固定下来，实现可以后补。
 
 **文件**
+- Create: `apps/api/app/agents/__init__.py`
 - Create: `apps/api/app/agents/protocols.py`
 - Create: `apps/api/tests/test_agent_protocols.py`
 
 **接口**
 - Consumes: P1.1
-- Produces: `class CourseAgent(Protocol)`，含 `name: str` 与 17 个方法签名（见下方附录 P1.2.1）
+- Produces: `class CourseAgent(Protocol)`，含 `name: str` 与 **10 个**方法签名（见下方附录 P1.2.1；附录列的 17 个方法中，其余 7 个在 **P3.8** 随对应 Schema 一起补齐）
 
 **步骤**
-- [ ] 写测试断言 `CourseAgent` 是 `Protocol`，且 `__protocol_attrs__` 里的方法名集合与附录一致（18 个）
+- [ ] 写测试断言 `CourseAgent` 是 `Protocol`，且 `__protocol_attrs__` **恰好**等于 `{"name"}` ∪ 本计划写入的 10 个方法名（**11 个**；附录的 17 个方法里另有 7 个属于 P3.8，届时才是 18 个）
 - [ ] 跑测试 → FAIL
-- [ ] 实现 `protocols.py`，**只写签名与 `...`，不写实现**
+- [ ] 实现 `protocols.py`，**只写签名与 `...`，不写实现**；模块顶部写 `from __future__ import annotations`，**不要 import 任何输出 Schema**（见附录说明）
 - [ ] 再跑 → PASS
 - [ ] 提交：`git commit -m "feat: 定义 Agent 协议"`
 
 **验收**
 ```bash
+# Linux / macOS
 apps/api/.venv/bin/python -m pytest apps/api/tests/test_agent_protocols.py -v
+# Windows
+apps\api\.venv\Scripts\python.exe -m pytest apps/api/tests/test_agent_protocols.py -v
 ```
 
 <details><summary>P1.2.1 · <code>CourseAgent</code> 的 17 个方法（目标版实测）</summary>
@@ -863,10 +867,23 @@ class CourseAgent(Protocol):
     def present_output(self, step: str, label: str, output: dict) -> OutputPresentation: ...
 ```
 
-> P1.2 只写**前 10 个**的签名（`create_mission` … `present_output`），其余 7 个
-> （`revise_workspace` · `audit_workspace_consistency` · `revise_chapter` · `enrich_chapter` ·
-> `apply_repair_patch` · `classify_reference_section` · `rewrite_section`）
-> 在 **P3.8** 随对应 Schema 一起补齐。
+> **本计划（P1.2）只写这 10 个**：
+> `create_mission` · `create_blueprint` · `plan_research` · `curate_research` ·
+> `generate_chapter` · `humanize` · `semantic_review` · `extract_continuity` ·
+> `plan_repair` · `present_output`
+>
+> 其余 7 个（`revise_workspace` · `audit_workspace_consistency` · `revise_chapter` ·
+> `enrich_chapter` · `apply_repair_patch` · `classify_reference_section` ·
+> `rewrite_section`）在 **P3.8** 随对应 Schema 一起补齐。
+>
+> **输出 Schema 在本计划尚不存在。** 上面 10 个签名里的 `MissionOutput` ·
+> `BlueprintOutput` · `ResearchPlanOutput` · `ResearchCurationOutput` ·
+> `HumanizerOutput` · `SemanticReviewOutput` · `ContinuityOutput` ·
+> `RepairCapabilityPlan` · `OutputPresentation` 都是 **P3.8** 的产物，
+> `apps/api/app/schemas.py` 也在那时才被创建。因此本计划**一律不 import 它们**：
+> 写了 `from __future__ import annotations` 之后，注解在运行期不会被求值，
+> 未定义的名字是安全的；P3.8 再把 import 补上。
+
 </details>
 
 #### P1.3 · 实现 FakeProvider
