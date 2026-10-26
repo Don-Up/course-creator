@@ -709,15 +709,17 @@ git status --short
 
 **文件**
 - Create: `apps/api/app/workflow/definitions.py`
+- Create: `apps/api/app/workflow/__init__.py`
 - Create: `apps/api/tests/test_workflow_definitions.py`
 
 **接口**
 - Consumes: P0.2
-- Produces: `WORKFLOW_STEPS`（7 个 dict，字段 `id` / `title` / `description` / `user_input` / `model_output`）；`STEP_ORDER`（`list[str]`）；`REVIEW_WORKFLOW_STEPS`；`REVIEW_STEP_ORDER`
+- Produces: `WORKFLOW_STEPS`（`list[dict[str, str]]`，7 个 dict，字段 `id` / `title` / `description` / `user_input` / `model_output`）；`STEP_ORDER`（`list[str]`）；`REVIEW_WORKFLOW_STEPS`（`list[dict[str, str]]`）；`REVIEW_STEP_ORDER`（`list[str]`）
 
 **步骤**
 - [ ] 写测试断言 `STEP_ORDER == ["intake","mission","blueprint","batch_plan","generation","quality","release"]`
-- [ ] 写测试断言 `WORKFLOW_STEPS` 每个元素的 5 个键齐全，且 `id` 顺序与 `STEP_ORDER` 一致
+- [ ] 写测试断言 `WORKFLOW_STEPS` 每个元素的 5 个键齐全（**恰好**这 5 个，不得多出别的键），且 `id` 顺序与 `STEP_ORDER` 一致
+- [ ] 写测试断言 `REVIEW_STEP_ORDER` 与 `STEP_ORDER` 同序同长；`REVIEW_WORKFLOW_STEPS` 里 `quality` 的 `title` 是「课程 Review」（不同于新建课程的「整课质量闭环」），其余 6 步与 `WORKFLOW_STEPS` 逐字段相同
 - [ ] 跑测试 → FAIL
 - [ ] 实现 `definitions.py`
 - [ ] 再跑 → PASS
@@ -725,8 +727,93 @@ git status --short
 
 **验收**
 ```bash
+# Linux / macOS
 apps/api/.venv/bin/python -m pytest apps/api/tests/test_workflow_definitions.py -v
+# Windows
+apps\api\.venv\Scripts\python.exe -m pytest apps/api/tests/test_workflow_definitions.py -v
+npm run check:source-size
 ```
+
+<details><summary>P1.1.1 · <code>WORKFLOW_STEPS</code> 的七条内容（目标版实测，逐字照抄）</summary>
+
+七阶段的 id、顺序和文案是**产品契约**，不是实现细节：前端直接渲染这些字段，
+§4.2 第 1 条也把它们钉死。因此下面 7 条 dict 的**字段和值逐字照抄**，
+不得改写、翻译、增删字段或调整顺序。
+
+```python
+{
+    "id": "intake",
+    "title": "课程需求",
+    "description": "确认课程目标、受众、范围、来源与交付形式",
+    "user_input": "课程名称、受众、学习目标、内容范围、来源政策",
+    "model_output": "结构化任务输入与缺失项",
+},
+{
+    "id": "mission",
+    "title": "任务定义",
+    "description": "把课程想法变成可验收的任务",
+    "user_input": "补充或修改全局课程要求；内容会同步影响后续所有工作区产物",
+    "model_output": "MISSION.md 与假设清单",
+},
+{
+    "id": "blueprint",
+    "title": "模块与课程蓝图",
+    "description": "按知识依赖和叙事连续性规划模块与章节",
+    "user_input": "调整全局技术路线、模块、章节顺序、数量与学习成果",
+    "model_output": "Module Context、章节计划与衔接关系",
+},
+{
+    "id": "batch_plan",
+    "title": "生成批次",
+    "description": "沿模块边界组织可恢复的生成单元",
+    "user_input": "确认或修改全局课程约束、批次、并发、预算和停止条件",
+    "model_output": "批次列表与每批 Context Pack 范围",
+},
+{
+    "id": "generation",
+    "title": "批次生产循环",
+    "description": "每批依次完成章节生成、三阶段质量门、返工与人工确认",
+    "user_input": "处理当前批次问题、批准进入下一批，或要求定向返工",
+    "model_output": "章节、质量门结果、连续性账本与批次进度",
+},
+{
+    "id": "quality",
+    "title": "整课质量闭环",
+    "description": "汇总所有批次的未达标项，并仅定向修复受影响章节",
+    "user_input": "确认整课质量结果，或对未通过章节发起统一定向修复",
+    "model_output": "全课程质量汇总、待修复章节队列与闭环结果",
+},
+{
+    "id": "release",
+    "title": "整课确认",
+    "description": "整课回归后交由用户决定是否完成",
+    "user_input": "最终审核与发布决定",
+    "model_output": "Markdown、HTML、质量记录和交付状态",
+},
+```
+
+`REVIEW_WORKFLOW_STEPS`（Review 既有课程）复用第 1–5 步与第 7 步，
+**只把第 6 步换成**下面这一条：
+
+```python
+{
+    "id": "quality",
+    "title": "课程 Review",
+    "description": "审阅或重生成既有课程内容",
+    "user_input": "选择章节、补充审阅要求并确认处理结果",
+    "model_output": "章节审校、质量报告与修改结果",
+},
+```
+
+两条硬性实现要求：
+
+1. `STEP_ORDER` 与 `REVIEW_STEP_ORDER` **必须从 `WORKFLOW_STEPS` / `REVIEW_WORKFLOW_STEPS`
+   推导**（如 `[step["id"] for step in WORKFLOW_STEPS]`），不得再手写第二份 id 列表——
+   否则"单一事实源"就变成了两份事实。
+2. `REVIEW_WORKFLOW_STEPS` 复用前 5 步与最后 1 步时**复用同一批 dict 对象**
+   （`WORKFLOW_STEPS[:-2]` 与 `WORKFLOW_STEPS[-1]`），不要复制一份再改写。
+
+</details>
 
 #### P1.2 · 定义 Agent Protocol
 
