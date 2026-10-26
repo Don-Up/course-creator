@@ -8,46 +8,55 @@ The remaining seven (`revise_workspace`, `audit_workspace_consistency`,
 `classify_reference_section`, `rewrite_section`) arrive in P3.8 together with
 their output schemas.
 
-The output types are deliberately *not* imported: `MissionOutput`,
-`BlueprintOutput`, `ResearchPlanOutput`, `ResearchCurationOutput`,
-`HumanizerOutput`, `SemanticReviewOutput`, `ContinuityOutput`,
-`RepairCapabilityPlan` and `OutputPresentation` are created by P3.8 together
-with `app/schemas.py`.  Because this module uses
-`from __future__ import annotations`, annotations are never evaluated at
-runtime, so the unresolved names stay harmless until P3.8 adds the imports.
-Until then every signature that mentions one of them carries a `# noqa: F821`
-marker; P3.8 replaces those markers with the real import.
+The output types are provided by P1.3's `app/schemas.py`; P3.8 adds the
+remaining schemas and the remaining seven methods.
+
+The protocol is runtime-checkable, so `isinstance(agent, CourseAgent)` is
+the evidence that an implementation really covers the whole boundary.
 """
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
+
+from app.schemas import (
+    BlueprintOutput,
+    ContinuityOutput,
+    HumanizerOutput,
+    MissionOutput,
+    OutputPresentation,
+    RepairCapabilityPlan,
+    ResearchCurationOutput,
+    ResearchPlanOutput,
+    SemanticReviewOutput,
+)
 
 
+@runtime_checkable
 class CourseAgent(Protocol):
     """The capability boundary every course agent has to satisfy."""
 
     name: str
 
-    def create_mission(self, request: dict) -> MissionOutput:  # noqa: F821
+    def create_mission(self, request: dict) -> MissionOutput:
         """Turn the intake request into a structured mission."""
         ...
 
     def create_blueprint(
         self, request: dict, mission: str
-    ) -> BlueprintOutput:  # noqa: F821
+    ) -> BlueprintOutput:
         """Plan the modules and chapters that fulfil the mission."""
         ...
 
     def plan_research(
         self, request: dict, mission: str
-    ) -> ResearchPlanOutput:  # noqa: F821
+    ) -> ResearchPlanOutput:
         """Plan which sources have to be researched for the course."""
         ...
 
     def curate_research(
         self, policy: str, candidates: dict
-    ) -> ResearchCurationOutput:  # noqa: F821
+    ) -> ResearchCurationOutput:
         """Select and structure the research candidates under the source policy."""
         ...
 
@@ -55,19 +64,19 @@ class CourseAgent(Protocol):
         """Write one chapter from its context pack."""
         ...
 
-    def humanize(self, markdown: str) -> HumanizerOutput:  # noqa: F821
+    def humanize(self, markdown: str) -> HumanizerOutput:
         """Rewrite the chapter into student-facing prose."""
         ...
 
     def semantic_review(
         self, markdown: str, context: dict
-    ) -> SemanticReviewOutput:  # noqa: F821
+    ) -> SemanticReviewOutput:
         """Review the chapter for meaning, coverage and correctness."""
         ...
 
     def extract_continuity(
         self, markdown: str, context: dict
-    ) -> ContinuityOutput:  # noqa: F821
+    ) -> ContinuityOutput:
         """Extract the continuity facts the next chapter has to respect."""
         ...
 
@@ -76,12 +85,12 @@ class CourseAgent(Protocol):
         task: dict,
         markdown: str,
         context: dict,
-    ) -> RepairCapabilityPlan:  # noqa: F821
+    ) -> RepairCapabilityPlan:
         """Plan how a failed chapter is repaired."""
         ...
 
     def present_output(
         self, step: str, label: str, output: dict
-    ) -> OutputPresentation:  # noqa: F821
+    ) -> OutputPresentation:
         """Present a workflow step result to the user."""
         ...
