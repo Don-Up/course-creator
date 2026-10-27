@@ -1,19 +1,23 @@
 """Behaviour tests for the run ledger.
 
-``app/workflow/repository.py`` is the only place that writes the run tables.
-The tests therefore look at the rows themselves: a new run has to leave a
-row in ``runs`` and a first event, a finished stage has to leave an event, a
-failure has to leave an error message, and the read model has to tell the
-seven stages apart by their state.
+``app/workflow/repository.py`` owns the run tables and
+``app/workflow/artifacts.py`` owns the artifact tables.  The tests therefore
+look at the rows themselves: a new run has to leave a row in ``runs`` and a
+first event, a finished stage has to leave an event, a failure has to leave
+an error message, and the read model has to tell the seven stages apart by
+their state.
 """
 
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from app.db import row_to_dict
+from app.workflow import artifacts
 from app.workflow.definitions import WORKFLOW_STEPS
 from app.workflow.repository import (
     append_event,
@@ -22,10 +26,44 @@ from app.workflow.repository import (
     list_run_artifacts,
     list_run_records,
     record_run_artifact,
+    record_stage_output,
     update_run,
 )
 
 RUN_ID = "run-1"
+
+
+def table_rows(database_path: Path, table: str) -> list[dict[str, Any]]:
+    """Read every row of one table out of the throwaway database.
+
+    Args:
+        database_path: The database file to read.
+        table: The name of the table, for example "artifacts".
+
+    Returns:
+        One dictionary per row, with the JSON columns decoded.
+    """
+    connection = sqlite3.connect(database_path)
+    connection.row_factory = sqlite3.Row
+    try:
+        rows = connection.execute(f"SELECT * FROM {table}").fetchall()
+    finally:
+        connection.close()
+    return [row_to_dict(row) or {} for row in rows]
+
+
+def _break_half_way(*args: Any, **kwargs: Any) -> None:
+    """Stand in for a write that breaks half way through.
+
+    Args:
+        args: The arguments the real function would have received.
+        kwargs: The keyword arguments the real function would have received.
+
+    Returns:
+        Nothing. It always raises.
+    Raises RuntimeError: always, because that is the point of it.
+    """
+    raise RuntimeError("产物写到一半炸了")
 
 
 def start_run(**overrides: Any) -> dict[str, Any]:
@@ -346,3 +384,167 @@ def test_listing_the_runs_of_a_course(use_temp_database: Path) -> None:
 
     assert {run["id"] for run in runs} == {RUN_ID, "run-2"}
     assert len(list_run_records()) == 3
+
+
+def test_one_artifact_write_fills_three_tables(use_temp_database: Path) -> None:
+    """One artifact leaves a row in the run view, the content record and the lineage.
+
+    Args:
+        use_temp_database: The throwaway database this test writes into.
+
+    Returns:
+        Nothing. The test fails when one of the three tables stayed empty.
+    """
+    start_run()
+    record_run_artifact(
+        RUN_ID, "intake", "intake.node", "intake 产物", {"headline": "a"}, {"raw": "a"}
+    )
+    record_run_artifact(
+        RUN_ID, "mission", "mission.node", "mission 产物", {"headline": "b"}, {"raw": "b"}
+    )
+
+    run_artifacts = table_rows(use_temp_database, "run_artifacts")
+    artifacts = table_rows(use_temp_database, "artifacts")
+    edges = table_rows(use_temp_database, "artifact_edges")
+
+    assert len(run_artifacts) == 2
+    assert len(artifacts) == 2
+
+    mission = next(item for item in artifacts if item["artifact_type"] == "mission")
+    assert mission["run_id"] == RUN_ID
+    assert mission["schema_version"] == "1.0"
+    assert mission["sensitivity"] == "internal"
+    assert mission["status"] == "RECORDED"
+    assert mission["is_current"] == 1
+    assert mission["scope"] == {
+        "node": "mission.node",
+        "run_id": RUN_ID,
+        "step": "mission",
+    }
+    assert len(mission["content_hash"]) == 64
+
+    assert len(edges) == 1
+    assert edges[0]["relation"] == "derives_from"
+    assert edges[0]["child_artifact_id"] == mission["id"]
+    assert edges[0]["parent_artifact_id"] == run_artifacts[0]["id"]
+
+
+def test_writing_the_same_artifact_twice_changes_nothing(
+    use_temp_database: Path,
+) -> None:
+    """The same run, node and source is one artifact, however often it is sent.
+
+    Args:
+        use_temp_database: The throwaway database this test writes into.
+
+    Returns:
+        Nothing. The test fails when a second row showed up somewhere.
+    """
+    start_run()
+    record_run_artifact(
+        RUN_ID, "mission", "mission.node", "任务定义", {"headline": "b"}, {"raw": "b"}
+    )
+    record_run_artifact(
+        RUN_ID, "mission", "mission.node", "任务定义", {"headline": "b"}, {"raw": "b"}
+    )
+
+    assert len(table_rows(use_temp_database, "run_artifacts")) == 1
+    assert len(table_rows(use_temp_database, "artifacts")) == 1
+    assert len(table_rows(use_temp_database, "artifact_edges")) == 0
+
+
+def test_a_broken_artifact_write_leaves_nothing_behind(
+    use_temp_database: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A write that breaks half way leaves no half written row in any table.
+
+    Args:
+        use_temp_database: The throwaway database this test writes into.
+        monkeypatch: The tool that makes the second half of the write break.
+
+    Returns:
+        Nothing. The test fails when a row survived the broken write.
+    """
+    start_run()
+    monkeypatch.setattr(artifacts, "write_artifact_rows", _break_half_way)
+
+    with pytest.raises(RuntimeError):
+        record_run_artifact(
+            RUN_ID, "mission", "mission.node", "任务定义", {"headline": "b"}, {"raw": "b"}
+        )
+
+    assert table_rows(use_temp_database, "run_artifacts") == []
+    assert table_rows(use_temp_database, "artifacts") == []
+    assert table_rows(use_temp_database, "artifact_edges") == []
+
+
+def test_a_failed_stage_leaves_no_event_and_no_success(
+    use_temp_database: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A stage that breaks half way leaves the run exactly as it was.
+
+    Args:
+        use_temp_database: The throwaway database this test writes into.
+        monkeypatch: The tool that makes the artifact write break half way.
+
+    Returns:
+        Nothing. The test fails when the run kept the event or the success.
+    """
+    start_run()
+    update_run(RUN_ID, status="RUNNING", step="mission")
+    monkeypatch.setattr(artifacts, "write_artifact_rows", _break_half_way)
+
+    with pytest.raises(RuntimeError):
+        record_stage_output(
+            RUN_ID,
+            "mission",
+            "mission.node",
+            "任务定义",
+            {"headline": "b"},
+            {"raw": "b"},
+            status="COMPLETED",
+            next_step="release",
+        )
+
+    record = get_run_record(RUN_ID)
+    assert record is not None
+    assert [event["event_type"] for event in record["events"]] == ["run.created"]
+    assert record["run"]["status"] == "RUNNING"
+    assert record["run"]["current_step"] == "mission"
+    assert list_run_artifacts(RUN_ID) == []
+
+
+def test_a_finished_stage_leaves_the_artifact_the_event_and_the_state(
+    use_temp_database: Path,
+) -> None:
+    """A stage that works leaves all three of its traces behind.
+
+    Args:
+        use_temp_database: The throwaway database this test writes into.
+
+    Returns:
+        Nothing. The test fails when one of the three is missing.
+    """
+    start_run()
+
+    record_stage_output(
+        RUN_ID,
+        "mission",
+        "mission.node",
+        "任务定义",
+        {"headline": "任务定义完成"},
+        {"raw": "mission"},
+        status="RUNNING",
+        next_step="blueprint",
+    )
+
+    record = get_run_record(RUN_ID)
+    assert record is not None
+    assert [event["event_type"] for event in record["events"]] == [
+        "run.created",
+        "stage.completed",
+    ]
+    assert record["run"]["status"] == "RUNNING"
+    assert record["run"]["current_step"] == "blueprint"
+    assert [item["step"] for item in record["artifacts"]] == ["mission"]
+    assert len(table_rows(use_temp_database, "artifacts")) == 1

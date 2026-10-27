@@ -8,13 +8,15 @@ impossible value before it reaches a stage output.
 The thirteen models P1.3 needs live here, plus the `CourseCreate` that
 P1.5 added for the intake form: it is the one request model of this
 module.  P1.6 adds the two response models of the course list, and P1.7
-adds the answer of the creation API.  The workspace schemas arrive with
-P3.8.
+adds the answer of the creation API.  P2.4 adds the four models of the
+editor, the API that reads and writes a chapter and a workspace file.
+P2.5 adds the models of the run read model, the answer the browser polls
+while the agent works.  The schemas of the agent stages arrive with P3.8.
 """
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -194,3 +196,187 @@ class CourseCreated(BaseModel):
     course: CourseSummary
     run_id: str
     status: str
+
+
+class ChapterRead(BaseModel):
+    """One chapter as the editor shows it.
+
+    The content hash is the fingerprint of the content, and it is what the
+    editor sends back as `expected_hash` when it saves.  The snapshot path
+    is only filled in by a save: it points at the copy of the content that
+    the save replaced.
+    """
+
+    key: str
+    path: str
+    content: str
+    content_hash: str
+    updated_at: str
+    snapshot_path: str = ""
+
+
+class ChapterSave(BaseModel):
+    """The body of a chapter save.
+
+    The expected hash is the fingerprint the editor read.  When the file on
+    the disk does not carry that fingerprint any more, the save is refused
+    with a 409 instead of overwriting the other editor's work.
+    """
+
+    content: str
+    expected_hash: str = Field(min_length=64, max_length=64)
+
+
+class WorkspaceFileRead(BaseModel):
+    """One file of the workspace as the editor shows it.
+
+    The content hash is the fingerprint of the content, and it is what the
+    editor sends back as `expected_hash` when it saves.  The snapshot path
+    is only filled in by a save: it points at the copy of the content that
+    the save replaced.
+    """
+
+    name: str
+    path: str
+    content: str
+    content_hash: str
+    size: int
+    updated_at: str
+    snapshot_path: str = ""
+
+
+class WorkspaceFileSave(BaseModel):
+    """The body of a workspace file save.
+
+    The expected hash is the fingerprint the editor read.  When the file on
+    the disk does not carry that fingerprint any more, the save is refused
+    with a 409 instead of overwriting the other editor's work.
+    """
+
+    content: str
+    expected_hash: str = Field(min_length=64, max_length=64)
+
+
+class RunCommandRead(BaseModel):
+    """One command of a run as the browser sees it.
+
+    The payload of a command stays in the database: it is the machine's own
+    instruction, not something a person reads.
+    """
+
+    id: str
+    kind: str
+    status: str
+    attempt_count: int = 0
+    created_at: str
+    updated_at: str
+
+
+class RunRead(BaseModel):
+    """One run as the browser sees it.
+
+    The fields are the ones of the `runs` row that a person reads.  The
+    request that started the run, the payload of an approval and the budget
+    policy are not here: they are the machine's own notes, and the later
+    phases grow them into the assembled prompt.
+
+    The active command is the command the run is still waiting on.  It is
+    None when there is none, and it is what tells the frontend that a run
+    which already failed may still get going again.
+    """
+
+    id: str
+    course_slug: str
+    mode: str
+    status: str
+    current_step: str
+    provider: str
+    model: str
+    interrupt_type: str | None = None
+    error_message: str | None = None
+    trace_id: str | None = None
+    created_at: str
+    updated_at: str
+    active_command: RunCommandRead | None = None
+
+
+class RunEventRead(BaseModel):
+    """One event of a run as the browser sees it.
+
+    The payload of an event stays in the database.  The event itself says
+    what happened, in which stage and when, and that is what a timeline
+    is made of.
+    """
+
+    seq: int
+    id: str
+    event_type: str
+    step: str
+    message: str
+    created_at: str
+
+
+class RunArtifactRead(BaseModel):
+    """One artifact of a run as the browser sees it.
+
+    The presentation is the artifact as it was written for a person to
+    read.  The untouched model output behind it is not part of the answer.
+    """
+
+    id: str
+    step: str
+    node: str
+    title: str
+    source: str
+    presentation: dict[str, Any] = Field(default_factory=dict)
+    created_at: str
+
+
+class WorkflowStepRead(BaseModel):
+    """One stage of the workflow as the browser shows it.
+
+    The status says where the stage stands: "completed", "active" or
+    "pending".
+    """
+
+    id: str
+    title: str
+    description: str
+    user_input: str
+    model_output: str
+    status: str
+
+
+class RunDetail(BaseModel):
+    """The answer of `GET /api/runs/{run_id}`.
+
+    The four parts are the ones the browser needs: where the run is, what
+    it has done, what it produced, and how far the seven stages have come.
+    """
+
+    run: RunRead
+    events: list[RunEventRead] = Field(default_factory=list)
+    artifacts: list[RunArtifactRead] = Field(default_factory=list)
+    workflow_steps: list[WorkflowStepRead] = Field(default_factory=list)
+
+
+class RunSummary(BaseModel):
+    """One run as the run list shows it.
+
+    The list is a way into the runs, so it carries the fields that say
+    which run this is and where it stands, and nothing else.
+    """
+
+    id: str
+    course_slug: str
+    mode: str
+    status: str
+    current_step: str
+    created_at: str
+    updated_at: str
+
+
+class RunList(BaseModel):
+    """The answer of `GET /api/runs`."""
+
+    items: list[RunSummary] = Field(default_factory=list)

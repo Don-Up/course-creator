@@ -1,19 +1,61 @@
-"""The HTTP routes of the course list and of course creation.
+"""The HTTP routes of the course list, of course creation and of the editor.
 
 The routes are thin: they call the course service and turn the answer into
 a response.  The service decides what a course is, the route only decides
 which status code a failure gets.
+
+The editor routes read and write one chapter or one workspace file.  A
+write carries the fingerprint the caller read, and a write whose
+fingerprint is out of date is answered with a 409: the person who is
+behind has to look at both versions before they decide which one wins.
 """
 
 import uuid
 
 from fastapi import APIRouter, HTTPException
 
-from app.course_service import create_course, get_course, list_courses
-from app.schemas import CourseCreated, CourseCreate, CourseList, CourseSummary
+from app.course_service import (
+    create_course,
+    get_course,
+    list_courses,
+    read_chapter,
+    read_workspace_file,
+    save_chapter,
+    save_workspace_file,
+)
+from app.courses.common import ConcurrencyConflict
+from app.schemas import (
+    ChapterRead,
+    ChapterSave,
+    CourseCreated,
+    CourseCreate,
+    CourseList,
+    CourseSummary,
+    WorkspaceFileRead,
+    WorkspaceFileSave,
+)
 
 
 router = APIRouter(prefix="/api/courses", tags=["courses"])
+
+
+def _http_error(error: Exception) -> HTTPException:
+    """Turn a failure of the course service into the answer of the route.
+
+    Args:
+        error: The exception the service raised.
+
+    Returns:
+        The error to answer with: a 409 when the file on disk changed after
+        the caller read it, a 404 when the course or the file is not there,
+        and a 400 for everything else, for example a path that points
+        outside the course.
+    """
+    if isinstance(error, ConcurrencyConflict):
+        return HTTPException(status_code=409, detail=str(error))
+    if isinstance(error, FileNotFoundError):
+        return HTTPException(status_code=404, detail=str(error))
+    return HTTPException(status_code=400, detail=str(error))
 
 
 @router.get("", response_model=CourseList)
@@ -79,3 +121,102 @@ def create_course_from_intake(payload: CourseCreate) -> CourseCreated:
         run_id=str(uuid.uuid4()),
         status=summary.status,
     )
+
+
+@router.get("/{slug}/chapters/{key:path}", response_model=ChapterRead)
+def read_one_chapter(slug: str, key: str) -> ChapterRead:
+    """Answer with one chapter of a course.
+
+    Args:
+        slug: The short name of the course, for example "python-101".
+        key: The key of the chapter, for example "01".
+
+    Returns:
+        The chapter: the key, the path, the content, the fingerprint of the
+        content and the moment it was changed the last time.
+        Raises HTTPException(404) when the course or the chapter does not
+        exist, and HTTPException(400) when the slug is illegal or the key
+        points outside the course.
+    """
+    try:
+        chapter = read_chapter(slug, key)
+    except (ValueError, FileNotFoundError) as error:
+        raise _http_error(error) from error
+    return ChapterRead(**chapter)
+
+
+@router.put("/{slug}/chapters/{key:path}", response_model=ChapterRead)
+def write_one_chapter(slug: str, key: str, payload: ChapterSave) -> ChapterRead:
+    """Write one chapter of a course, when nobody else changed it.
+
+    Args:
+        slug: The short name of the course, for example "python-101".
+        key: The key of the chapter, for example "01".
+        payload: The new content and the fingerprint the caller read.
+
+    Returns:
+        The chapter as it is after the save, with the path of the snapshot
+        of the content that was replaced.
+        Raises HTTPException(409) when the fingerprint does not match what
+        is on the disk, HTTPException(404) when the course or the chapter
+        does not exist, and HTTPException(400) when the slug is illegal
+        or the key points outside the course.
+    """
+    try:
+        chapter = save_chapter(
+            slug, key, payload.content, payload.expected_hash
+        )
+    except (ValueError, FileNotFoundError, ConcurrencyConflict) as error:
+        raise _http_error(error) from error
+    return ChapterRead(**chapter)
+
+
+@router.get("/{slug}/workspace/files/{name:path}", response_model=WorkspaceFileRead)
+def read_one_workspace_file(slug: str, name: str) -> WorkspaceFileRead:
+    """Answer with one file of the workspace of a course.
+
+    Args:
+        slug: The short name of the course, for example "python-101".
+        name: The name of the workspace file, for example "NOTES.md".
+
+    Returns:
+        The file: the name, the path, the content, the fingerprint of the
+        content, the size of the file and the moment it was changed the
+        last time.
+        Raises HTTPException(404) when the course or the file does not
+        exist, and HTTPException(400) when the slug is illegal or the name
+        points outside the workspace.
+    """
+    try:
+        workspace_file = read_workspace_file(slug, name)
+    except (ValueError, FileNotFoundError) as error:
+        raise _http_error(error) from error
+    return WorkspaceFileRead(**workspace_file)
+
+
+@router.put("/{slug}/workspace/files/{name:path}", response_model=WorkspaceFileRead)
+def write_one_workspace_file(
+    slug: str, name: str, payload: WorkspaceFileSave
+) -> WorkspaceFileRead:
+    """Write one file of the workspace, when nobody else changed it.
+
+    Args:
+        slug: The short name of the course, for example "python-101".
+        name: The name of the workspace file, for example "NOTES.md".
+        payload: The new content and the fingerprint the caller read.
+
+    Returns:
+        The file as it is after the save, with the path of the snapshot of
+        the content that was replaced.
+        Raises HTTPException(409) when the fingerprint does not match what
+        is on the disk, HTTPException(404) when the course or the file
+        does not exist, and HTTPException(400) when the slug is illegal
+        or the name points outside the workspace.
+    """
+    try:
+        workspace_file = save_workspace_file(
+            slug, name, payload.content, payload.expected_hash
+        )
+    except (ValueError, FileNotFoundError, ConcurrencyConflict) as error:
+        raise _http_error(error) from error
+    return WorkspaceFileRead(**workspace_file)

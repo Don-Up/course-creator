@@ -35,6 +35,18 @@ EXPECTED_MODELS = frozenset(
         "CourseSummary",
         "CourseList",
         "CourseCreated",
+        "ChapterRead",
+        "ChapterSave",
+        "WorkspaceFileRead",
+        "WorkspaceFileSave",
+        "RunCommandRead",
+        "RunRead",
+        "RunEventRead",
+        "RunArtifactRead",
+        "WorkflowStepRead",
+        "RunDetail",
+        "RunSummary",
+        "RunList",
     }
 )
 
@@ -42,8 +54,10 @@ EXPECTED_MODELS = frozenset(
 def test_schemas_module_exposes_exactly_the_agreed_models():
     """P1.3 owns thirteen models, P1.5 the intake, P1.6 the course list.
 
-    P1.7 adds the answer of the creation API.  The set is pinned so that a
-    schema cannot slip in early: the workspace schemas belong to P3.8.
+    P1.7 adds the answer of the creation API, P2.4 the four models of the
+    editor and P2.5 the eight models of the run read model.  The set is
+    pinned so that a schema cannot slip in early: the schemas of the agent
+    stages belong to P3.8.
     """
     exported = {
         name

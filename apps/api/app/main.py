@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.course_routes import router as course_router
+from app.api.run_routes import router as run_router
 from app.api.system_routes import router as system_router
 from app.config import get_settings
 
@@ -19,6 +20,7 @@ app.add_middleware(
 )
 app.include_router(system_router)
 app.include_router(course_router)
+app.include_router(run_router)
 app.mount(
     "/course-example",
     StaticFiles(directory=EXAMPLE_COURSE_ROOT, html=True),

@@ -1,13 +1,18 @@
 """The ledger of a run: every state change leaves a row behind.
 
-`app/workflow/repository.py` is the only place that writes the `runs`,
-`run_events` and `run_artifacts` tables.  The rule it follows is simple: a
-run that changed something has to be able to say what changed, in which
-stage, and when.
+`app/workflow/repository.py` owns the `runs` and `run_events` tables, and it
+puts together the read model the API later hands to the browser: the run
+itself, its events, its artifacts, and the seven workflow steps with the
+state each one is in.  The artifacts themselves live in
+`app/workflow/artifacts.py`, and this module re-exports the two functions
+that read and write them.
 
-Every write returns the row it wrote.  `get_run_record` assembles the read
-model the API later hands to the browser: the run itself, its events, its
-artifacts, and the seven workflow steps with the state each one is in.
+The rule it follows is simple: a run that changed something has to be able to
+say what changed, in which stage, and when.
+
+A stage that finishes writes three things at once: the run moves on, the
+event is written down, and the artifact is stored.  They share one
+transaction, so a stage that breaks half way leaves nothing behind at all.
 """
 
 from __future__ import annotations
@@ -18,15 +23,30 @@ import uuid
 from typing import Any
 
 from app.db import database, row_to_dict, utcnow
+from app.workflow.artifacts import (
+    insert_run_artifact,
+    list_run_artifacts,
+    record_run_artifact,
+)
 from app.workflow.definitions import STEP_ORDER, WORKFLOW_STEPS
+
+__all__ = [
+    "append_event",
+    "create_run_record",
+    "get_run_record",
+    "list_run_artifacts",
+    "list_run_records",
+    "record_run_artifact",
+    "record_stage_output",
+    "update_run",
+]
 
 
 def _trace_value(trace: Any, name: str, fallback: str | None = None) -> str | None:
     """Read one field out of a trace context, be it a mapping or an object.
 
     Args:
-        trace: The trace context, for example a mapping with a "trace_id"
-            key.  It may be None.
+        trace: The trace context, for example {"trace_id": "trace-1"}.
         name: The field to read, for example "trace_id".
         fallback: The value to use when the trace does not carry the field.
 
@@ -72,6 +92,119 @@ def _step_index(current_step: str) -> int:
     return 0
 
 
+def _insert_event(
+    connection: sqlite3.Connection,
+    run_id: str,
+    event_type: str,
+    step: str,
+    message: str,
+    payload: dict[str, Any] | None = None,
+    trace: Any | None = None,
+) -> dict[str, Any]:
+    """Write one event into the ledger of a run, inside a given transaction.
+
+    Args:
+        connection: The open connection, inside the caller's transaction.
+        run_id: The run this event belongs to, for example "run-1".
+        event_type: What happened, for example "run.created".
+        step: The stage the event belongs to, for example "intake".
+        message: A short line a human can read, for example "任务定义完成".
+        payload: The details of the event, for example {"attempt": 1}.
+        trace: The trace context, for example {"trace_id": "trace-1"}.
+
+    Returns:
+        The new row of `run_events`, decoded into a dictionary.
+    """
+    event_id = str(uuid.uuid4())
+    now = utcnow()
+    connection.execute(
+        """
+        INSERT INTO run_events (
+            id, run_id, event_type, step, message, payload_json,
+            trace_id, span_id, parent_span_id, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            event_id,
+            run_id,
+            event_type,
+            step,
+            message,
+            json.dumps(payload or {}, ensure_ascii=False),
+            _trace_value(trace, "trace_id", run_id),
+            _trace_value(trace, "span_id"),
+            _trace_value(trace, "parent_span_id"),
+            now,
+        ),
+    )
+    row = connection.execute(
+        "SELECT * FROM run_events WHERE id = ?", (event_id,)
+    ).fetchone()
+    return row_to_dict(row) or {}
+
+
+def _update_run(
+    connection: sqlite3.Connection,
+    run_id: str,
+    *,
+    status: str | None = None,
+    step: str | None = None,
+    interrupt_type: str | None = None,
+    interrupt_payload: dict[str, Any] | None = None,
+    error_message: str | None = None,
+    clear_interrupt: bool = False,
+    clear_error: bool = False,
+) -> dict[str, Any]:
+    """Change the state of a run, inside a given transaction.
+
+    Args:
+        connection: The open connection, inside the caller's transaction.
+        run_id: The run to change, for example "run-1".
+        status: The new run status, for example "RUNNING".
+        step: The stage the run is at now, for example "mission".
+        interrupt_type: The kind of approval the run waits for, for example
+            "MISSION_APPROVAL".
+        interrupt_payload: The details of that approval, for example
+            {"type": "MISSION_APPROVAL"}.
+        error_message: The reason the run failed, for example "生成失败了".
+        clear_interrupt: True takes the interrupt and its payload away.
+        clear_error: True takes the error message away.
+
+    Returns:
+        The updated row of `runs`, decoded into a dictionary.
+    Raises ValueError: when there is no run with this id.
+    """
+    fields = ["updated_at = ?"]
+    values: list[Any] = [utcnow()]
+    if status is not None:
+        fields.append("status = ?")
+        values.append(status)
+    if step is not None:
+        fields.append("current_step = ?")
+        values.append(step)
+    if clear_interrupt:
+        fields.extend(["interrupt_type = NULL", "interrupt_payload_json = NULL"])
+    elif interrupt_type is not None:
+        fields.extend(["interrupt_type = ?", "interrupt_payload_json = ?"])
+        values.extend(
+            [interrupt_type, json.dumps(interrupt_payload or {}, ensure_ascii=False)]
+        )
+    if error_message is not None:
+        fields.append("error_message = ?")
+        values.append(error_message)
+    elif clear_error:
+        fields.append("error_message = NULL")
+    values.append(run_id)
+    cursor = connection.execute(
+        f"UPDATE runs SET {', '.join(fields)} WHERE id = ?",
+        values,
+    )
+    if cursor.rowcount == 0:
+        raise ValueError("Run 不存在")
+    row = _run_row(connection, run_id)
+    return row or {}
+
+
 def create_run_record(
     run_id: str,
     course_slug: str,
@@ -84,7 +217,9 @@ def create_run_record(
     """Open a new run: one row in `runs` plus the first event.
 
     The run starts in `QUEUED` at the first stage, and its trace id is the
-    run id itself, so one trace covers the whole run.
+    run id itself, so one trace covers the whole run.  The row and the first
+    event are written in one transaction, so a run never exists without the
+    event that says it was created.
 
     Args:
         run_id: The id of the new run, for example a uuid4 string.
@@ -122,8 +257,7 @@ def create_run_record(
                 now,
             ),
         )
-    append_event(run_id, "run.created", "intake", "课程 Agent Run 已创建")
-    with database() as connection:
+        _insert_event(connection, run_id, "run.created", "intake", "课程 Agent Run 已创建")
         row = _run_row(connection, run_id)
     return row or {}
 
@@ -153,33 +287,10 @@ def append_event(
     Returns:
         The new row of `run_events`, decoded into a dictionary.
     """
-    event_id = str(uuid.uuid4())
-    now = utcnow()
     with database() as connection:
-        connection.execute(
-            """
-            INSERT INTO run_events (
-                id, run_id, event_type, step, message, payload_json,
-                trace_id, span_id, parent_span_id, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                event_id,
-                run_id,
-                event_type,
-                step,
-                message,
-                json.dumps(payload or {}, ensure_ascii=False),
-                _trace_value(trace, "trace_id", run_id),
-                _trace_value(trace, "span_id"),
-                _trace_value(trace, "parent_span_id"),
-                now,
-            ),
+        return _insert_event(
+            connection, run_id, event_type, step, message, payload, trace
         )
-        row = connection.execute(
-            "SELECT * FROM run_events WHERE id = ?", (event_id,)
-        ).fetchone()
-    return row_to_dict(row) or {}
 
 
 def update_run(
@@ -217,107 +328,76 @@ def update_run(
         The updated row of `runs`, decoded into a dictionary.
     Raises ValueError: when there is no run with this id.
     """
-    fields = ["updated_at = ?"]
-    values: list[Any] = [utcnow()]
-    if status is not None:
-        fields.append("status = ?")
-        values.append(status)
-    if step is not None:
-        fields.append("current_step = ?")
-        values.append(step)
-    if clear_interrupt:
-        fields.extend(["interrupt_type = NULL", "interrupt_payload_json = NULL"])
-    elif interrupt_type is not None:
-        fields.extend(["interrupt_type = ?", "interrupt_payload_json = ?"])
-        values.extend(
-            [interrupt_type, json.dumps(interrupt_payload or {}, ensure_ascii=False)]
-        )
-    if error_message is not None:
-        fields.append("error_message = ?")
-        values.append(error_message)
-    elif clear_error:
-        fields.append("error_message = NULL")
-    values.append(run_id)
     with database() as connection:
-        cursor = connection.execute(
-            f"UPDATE runs SET {', '.join(fields)} WHERE id = ?",
-            values,
+        return _update_run(
+            connection,
+            run_id,
+            status=status,
+            step=step,
+            interrupt_type=interrupt_type,
+            interrupt_payload=interrupt_payload,
+            error_message=error_message,
+            clear_interrupt=clear_interrupt,
+            clear_error=clear_error,
         )
-        if cursor.rowcount == 0:
-            raise ValueError("Run 不存在")
-        row = _run_row(connection, run_id)
-    return row or {}
 
 
-def record_run_artifact(
+def record_stage_output(
     run_id: str,
     step: str,
     node: str,
     title: str,
     presentation: dict[str, Any],
     raw_output: dict[str, Any],
+    *,
     source: str = "model",
+    status: str | None = None,
+    next_step: str | None = None,
+    event_type: str = "stage.completed",
+    message: str | None = None,
 ) -> dict[str, Any]:
-    """Write one artifact of a run into the ledger.
+    """Record that a stage finished, and what it produced, in one go.
+
+    Three things happen together: the run moves on, the event is written
+    down, and the artifact is stored.  They share one transaction, so a stage
+    that breaks half way leaves the run exactly as it was -- no event, no
+    finished state, no half written artifact.
+
+    The artifact is stored last on purpose.  It is the heaviest of the three
+    writes and the one most likely to fail, so when it fails the two cheap
+    writes before it are taken back with it.
 
     Args:
-        run_id: The run this artifact belongs to, for example "run-1".
-        step: The stage the artifact came from, for example "mission".
-        node: The node that produced it, for example "mission.agent".
+        run_id: The run this stage belongs to, for example "run-1".
+        step: The stage that just finished, for example "mission".
+        node: The node that produced the output, for example "mission.agent".
         title: A short title a human can read, for example "任务定义".
-        presentation: The artefact as it should be shown to a person, for
-            example {"headline": "任务定义完成"}.
+        presentation: The artifact as it is shown to a person, for example
+            {"headline": "任务定义完成"}.
         raw_output: The untouched model output behind it, for example
             {"markdown": "..."}.
         source: Where the artifact came from, for example "model" or
             "system".
+        status: The status the run should have afterwards, for example
+            "RUNNING".  The run keeps its status when it is None.
+        next_step: The stage the run moves to, for example "blueprint".  The
+            run stays where it is when it is None.
+        event_type: The kind of event this stage leaves, for example
+            "stage.completed".
+        message: The line a human reads, for example "任务定义完成".  The
+            title is used when it is None.
 
     Returns:
-        The new row of `run_artifacts`, decoded into a dictionary.
+        The row of `run_artifacts` that was written, decoded into a
+        dictionary.
     """
-    artifact_id = str(uuid.uuid4())
-    now = utcnow()
     with database() as connection:
-        connection.execute(
-            """
-            INSERT INTO run_artifacts (
-                id, run_id, step, node, title, source,
-                presentation_json, raw_output_json, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                artifact_id,
-                run_id,
-                step,
-                node,
-                title,
-                source,
-                json.dumps(presentation, ensure_ascii=False, default=str),
-                json.dumps(raw_output, ensure_ascii=False, default=str),
-                now,
-            ),
+        if status is not None or next_step is not None:
+            _update_run(connection, run_id, status=status, step=next_step)
+        _insert_event(connection, run_id, event_type, step, message or title)
+        return insert_run_artifact(
+            connection, run_id, step, node, title, presentation, raw_output, source
         )
-        row = connection.execute(
-            "SELECT * FROM run_artifacts WHERE id = ?", (artifact_id,)
-        ).fetchone()
-    return row_to_dict(row) or {}
-
-
-def list_run_artifacts(run_id: str) -> list[dict[str, Any]]:
-    """List the artifacts of a run, oldest first.
-
-    Args:
-        run_id: The run whose artifacts are wanted, for example "run-1".
-
-    Returns:
-        One dictionary per artifact, in the order they were written.
-    """
-    with database() as connection:
-        rows = connection.execute(
-            "SELECT * FROM run_artifacts WHERE run_id = ? ORDER BY created_at, id",
-            (run_id,),
-        ).fetchall()
-    return [row_to_dict(row) or {} for row in rows]
 
 
 def get_run_record(run_id: str) -> dict[str, Any] | None:
@@ -379,11 +459,11 @@ def list_run_records(course_slug: str | None = None) -> list[dict[str, Any]]:
     with database() as connection:
         if course_slug:
             rows = connection.execute(
-                "SELECT * FROM runs WHERE course_slug = ? ORDER BY created_at DESC",
+                "SELECT * FROM runs WHERE course_slug = ? ORDER BY created_at DESC, rowid DESC",
                 (course_slug,),
             ).fetchall()
         else:
             rows = connection.execute(
-                "SELECT * FROM runs ORDER BY created_at DESC LIMIT 100"
+                "SELECT * FROM runs ORDER BY created_at DESC, rowid DESC LIMIT 100"
             ).fetchall()
     return [row_to_dict(row) or {} for row in rows]

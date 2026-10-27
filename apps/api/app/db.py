@@ -82,6 +82,9 @@ CREATE TABLE IF NOT EXISTS run_artifacts (
     FOREIGN KEY(run_id) REFERENCES runs(id)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_run_artifacts_identity
+ON run_artifacts(run_id, node, source);
+
 CREATE TABLE IF NOT EXISTS repair_tasks (
     id TEXT PRIMARY KEY,
     run_id TEXT NOT NULL,
