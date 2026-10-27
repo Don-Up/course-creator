@@ -1,6 +1,7 @@
 """Contract tests for the first batch of agent output schemas.
 
-P1.3 lands the thirteen output models the `CourseAgent` protocol returns.
+P1.3 lands the thirteen output models the `CourseAgent` protocol returns,
+and P1.5 adds `CourseCreate`, the intake model of the creation API.
 The point of the models is not that the classes exist but that they reject
 impossible values: the fake runtime and the real providers that arrive
 later have to share one field contract, so a score outside its range or an
@@ -30,15 +31,16 @@ EXPECTED_MODELS = frozenset(
         "ContinuityOutput",
         "RepairCapabilityPlan",
         "OutputPresentation",
+        "CourseCreate",
     }
 )
 
 
-def test_schemas_module_exposes_exactly_the_thirteen_agreed_models():
-    """P1.3 owns thirteen models -- the later phases bring their own.
+def test_schemas_module_exposes_exactly_the_agreed_models():
+    """P1.3 owns thirteen models and P1.5 adds the intake model.
 
-    The set is pinned so that a schema cannot slip in early: `CourseCreate`
-    belongs to P1.5 and the workspace schemas to P3.8.
+    The set is pinned so that a schema cannot slip in early: the workspace
+    schemas belong to P3.8.
     """
     exported = {
         name

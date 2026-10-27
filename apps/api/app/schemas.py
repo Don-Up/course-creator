@@ -5,8 +5,9 @@ the agents answer with real models instead of bare dictionaries, so the
 workflow layer can rely on a field contract and Pydantic can reject an
 impossible value before it reaches a stage output.
 
-Only the thirteen models P1.3 needs live here.  `CourseCreate` arrives with
-P1.5 and the workspace schemas with P3.8.
+The thirteen models P1.3 needs live here, plus the `CourseCreate` that
+P1.5 added for the intake form: it is the one request model of this
+module.  The workspace schemas arrive with P3.8.
 """
 
 from __future__ import annotations
@@ -14,6 +15,8 @@ from __future__ import annotations
 from typing import Literal
 
 from pydantic import BaseModel, Field
+
+from app.courses.common import SLUG_PATTERN
 
 
 class MissionOutput(BaseModel):
@@ -129,3 +132,26 @@ class OutputPresentation(BaseModel):
     metrics: dict[str, str | int | float | bool] = Field(default_factory=dict)
     issues: list[str] = Field(default_factory=list)
     next_action: str = ""
+
+
+class CourseCreate(BaseModel):
+    """The intake form a user submits to create a course.
+
+    This is the only request model of the module: the creation API of P1.7
+    takes it as the body of `POST /api/courses`.  The slug uses the pattern
+    of `app.courses.common.SLUG_PATTERN`, so the API and the path guard can
+    never disagree about what a legal course folder looks like.
+    """
+
+    title: str = Field(min_length=2, max_length=120)
+    slug: str = Field(pattern=SLUG_PATTERN.pattern)
+    audience: str = Field(min_length=2, max_length=500)
+    goals: str = Field(min_length=5, max_length=3000)
+    scope: str = Field(min_length=2, max_length=3000)
+    source_policy: str = "允许使用用户资料与公开官方资料"
+    delivery: str = "Markdown + HTML"
+    preferred_chapter_count: int = Field(default=12, ge=1, le=60)
+    effective_char_min: int = Field(default=12000, ge=1000, le=50000)
+    token_budget_mtokens: float | None = Field(default=None, ge=0.01, le=10000)
+    provider: str = "codex_gateway"
+    model: str = "llm-gateway--kimi-k3"

@@ -1248,25 +1248,146 @@ npm run check:source-size
 **产出**：建课时一次性铺好目录骨架与 `course.json`。
 
 **文件**
+- Modify: `apps/api/app/schemas.py`（加 `CourseCreate`——P1.3 的模块 docstring 已经写明「`CourseCreate` arrives with P1.5」；顺手把那句改掉）
 - Create: `apps/api/app/courses/scaffold.py`
 - Create: `apps/api/tests/test_course_scaffold.py`
 
 **接口**
 - Consumes: P1.4 的 `_safe_course_root` / `_write_json_atomic`
-- Produces: `create_course_scaffold(request: CourseCreate, courses_root: Path) -> dict`（返回课程元数据字典）
+- Produces:
+  - `app.schemas.CourseCreate`（P1.7 的 `POST /api/courses` 直接拿它当请求体）
+  - `app.courses.scaffold.create_course_scaffold(request: CourseCreate, courses_root: Path) -> dict[str, Any]`
+    （返回**刚落盘的**课程元数据字典 = `course.json` 的内容；
+    `courses_root` 显式传入，不读 `Settings` 单例——理由同 P1.4 的 `_safe_course_root`）
+
+**写代码时的硬约定**
+- `CourseCreate` 的字段、默认值、取值范围**逐字照抄** P1.7「接口」段的那一串：
+  `title` 2–120 · `slug` 正则 `^[a-z0-9]+(?:-[a-z0-9]+)*$` · `audience` 2–500 ·
+  `goals` 5–3000 · `scope` 2–3000 ·
+  `source_policy` 默认「允许使用用户资料与公开官方资料」· `delivery` 默认「Markdown + HTML」 ·
+  `preferred_chapter_count` 默认 12（1–60）· `effective_char_min` 默认 12000（1000–50000）·
+  `token_budget_mtokens` 可选（0.01–10000）· `provider` 默认 `codex_gateway` ·
+  `model` 默认 `llm-gateway--kimi-k3`
+- **`CourseCreate.slug` 的 `pattern` 必须与 `SLUG_PATTERN.pattern` 逐字相同**——P1.4 已经把
+  `SLUG_PATTERN` 定成 slug 校验的唯一来源。写成两处字面量可以，但 P1.5 的测试**必须锁住**
+  它们相等，否则 P1.7 的 API 放行、护栏拒绝。
+- `course.json` 的键**固定为这 11 个**（多一个少一个都算错）：
+
+  | 键 | 值 | 谁要读 |
+  |---|---|---|
+  | `schemaVersion` | `1` | 目标版 `course.json` 的既有字段 |
+  | `slug` | `request.slug` | P1.6 目录扫描 · P1.7 |
+  | `title` | `request.title` | P1.6 · P1.7 |
+  | `description` | `request.goals` | P1.6 的目录项要 `description` |
+  | `audience` | `request.audience` | 本计划 · P8.4 |
+  | `goals` | `request.goals` | 本计划 · P8.4 |
+  | `scope` | `request.scope` | 本计划 · P8.4 |
+  | `duration` | `"待蓝图确认"` | 目录项也有 `duration` |
+  | `status` | `"preparing"` | 目录项的 `status` |
+  | `preferred_chapter_count` | `request.preferred_chapter_count` | P4.4 要把章节数同步进 `course.json` |
+  | `lessons` | `[]` | P1.6 用 `len(lessons)` 算 `chapters` · P4.4 · P8.4 |
+
+  目标版的 `course.json` 是 `slug`/`title`/`description`/`duration`/`status`/`audience`/`lessons`，
+  **额外**带 `goals`/`scope`——P8.4 明确说「Consumes: P1.5 的 `course.json` 结构」，
+  而 P8.4 产出的键里有 `goals`/`scope`，所以 P1.5 就得先写进去，不能等 P8.4 补。
+- `course.json` **必须**用 P1.4 的 `_write_json_atomic` 写，**不要**用 `write_text` + `json.dumps`。
+  参考实现用的是 `write_text`——写一半被读到就会拿到半截 JSON，**这是已知缺陷，不要照抄**。
+- 目录骨架 = 6 个顶层目录 + 1 个子目录：
+  `lessons/` · `reference/` · `markdown/` · `assets/` · `quality/` · `workspace/`
+  ＋ `workspace/learning-records/`。
+  `workspace/` 下 3 个文件：`NOTES.md` · `RESOURCES.md` · `COURSE-GENERATION-SPEC.md`；
+  `reference/` 下 1 个文件：`glossary.md`。4 个文件的内容照 P1.5.1 附录抄。
+- **P1.5 不许 import `app.courses.catalog`（P1.6 才建）也不许 import `app.courses.workspace`（P2.x 才建）。**
+  参考实现的 `scaffold.py` 两个都 import 了，**这是已知缺陷，不要照抄**。
+  `RESOURCES.md` 的正文在本文件里自己写死（见 P1.5.1），只有「来源政策」那一段用
+  `request.source_policy` 填。
+- slug 重复 → 抛 `FileExistsError`（**目录已存在就抛，不许覆盖已有课程**）。
+- `scaffold.py` 里**每个函数**都要写文档注释（docstring：说明 / 参数 / 返回），
+  格式照 P1.4 `common.py` 的四个函数。
+- `from typing import Any` 必须 import（返回类型是 `dict[str, Any]`）。参考实现漏了，**不要照抄**。
+- 单行不超过 92 字符（中文按 2 个字符宽计算）；`ruff check` 必须干净。
+- 新文件都要过 `npm run check:source-size`（单文件 500 行上限）。
+- **不要** `git add` / `git commit` / `git push`——提交由开发者自己做。
 
 **步骤**
-- [ ] 写测试：创建后 `courses/<slug>/` 下存在 `lessons/` · `reference/` · `markdown/` · `assets/` · `quality/` · `workspace/`
-- [ ] 写测试：`workspace/` 下存在 `NOTES.md` · `RESOURCES.md` · `COURSE-GENERATION-SPEC.md`
-- [ ] 写测试：`course.json` 含 `slug` / `title` / `audience` / `goals` / `scope` / `status` / `lessons: []`
-- [ ] 写测试：**slug 重复时抛 `FileExistsError`**
+- [ ] 写测试：创建后 `courses/<slug>/` 下存在 `lessons/` · `reference/` · `markdown/` · `assets/` · `quality/` · `workspace/`，且 `workspace/learning-records/` 也在
+- [ ] 写测试：`workspace/` 下存在 `NOTES.md` · `RESOURCES.md` · `COURSE-GENERATION-SPEC.md`；`reference/` 下存在 `glossary.md`
+- [ ] 写测试：`course.json` 含 `slug` / `title` / `audience` / `goals` / `scope` / `status` / `lessons: []`，且 `status == "preparing"` · `description == goals` · `lessons == []`
+- [ ] 写测试：`course.json` 的键**恰好**是「硬约定」表里那 11 个（多一个少一个都算失败）
+- [ ] 写测试：`RESOURCES.md` 里有 `request.source_policy`；`COURSE-GENERATION-SPEC.md` 里有 `delivery` / `preferred_chapter_count` / `effective_char_min` 三个值
+- [ ] 写测试：**slug 重复时抛 `FileExistsError`**，且**原目录里的文件一个都不许被改写**
+- [ ] 写测试：`CourseCreate` 的 slug `pattern` 与 `SLUG_PATTERN.pattern` **逐字相同**
+- [ ] 写测试：`CourseCreate` 拒绝非法输入（`title` 1 个字 / `audience` 1 个字 / `goals` 4 个字 / `scope` 1 个字 / `preferred_chapter_count=0` / `preferred_chapter_count=61` / `effective_char_min=999` / `effective_char_min=50001` / `slug` 含大写 / `slug` 含下划线）
 - [ ] 跑测试 → FAIL → 实现 → PASS
-- [ ] 提交：`git commit -m "feat: 实现课程脚手架创建"`
+- [ ] 改 `app/schemas.py` 的模块 docstring：现在住着 14 个模型，把「`CourseCreate` arrives with P1.5」那句换成「P1.5 加进来的 `CourseCreate`」
+- [ ] 写一份改动说明（改了哪些文件、跑了哪些命令、结果如何）；**不要** `git add` / `git commit` / `git push`——提交由开发者自己做
 
 **验收**
 ```bash
+# Linux / macOS
 apps/api/.venv/bin/python -m pytest apps/api/tests/test_course_scaffold.py -v
+# Windows
+apps\api\.venv\Scripts\python.exe -m pytest apps/api/tests/test_course_scaffold.py -v
+npm run check:source-size
 ```
+
+<details><summary>P1.5.1 · 脚手架写出的 4 个文件（内容照抄，别自己发挥）</summary>
+
+**`workspace/NOTES.md`**
+
+```markdown
+# 课程迭代笔记
+
+本课程由课程生成 Agent 创建，当前处于引导模式。
+```
+
+**`workspace/RESOURCES.md`**（`{source_policy}` 换成 `request.source_policy`）
+
+```markdown
+# 课程资源
+
+## 来源政策
+
+{source_policy}
+
+## 检索范围与使用边界
+
+- Agent 会围绕课程核心概念、所用框架或工具的当前 API、相关标准或论文、项目实践与部署/安全边界检索资料。
+- 每一条资料都必须说明其支撑的教学内容；关键事实、API 用法和规范不得只依赖未核验的社区文章。
+- 资料是否可用以来源政策为准：只有政策允许时，才将社区教程作为补充阅读。
+
+## Agent 检索与核验
+
+任务定义确认后，Agent 会在这里写入检索计划、经筛选的资料和仍需人工补充的缺口。
+
+## 用户补充资源
+
+可在此登记链接、课程资料说明或上传附件的使用目的。
+```
+
+**`workspace/COURSE-GENERATION-SPEC.md`**
+
+```markdown
+# 课程生成规格
+
+- 交付格式：{delivery}
+- 期望章节数：{preferred_chapter_count}（供蓝图规划参考）
+- 单章有效字符数下限：{effective_char_min}
+- 运行模式：本地单用户、引导模式
+- 质量门：逐章 Humanizer、构建、确定性检查、语义审校、人工确认
+- 自动返工上限：同类问题连续三轮后转人工
+```
+
+**`reference/glossary.md`**
+
+```markdown
+# 术语表
+
+| 术语 | 定义 |
+| --- | --- |
+```
+
+</details>
 
 #### P1.6 · 实现课程目录扫描与课程门面
 
