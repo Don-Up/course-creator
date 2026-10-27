@@ -1650,6 +1650,8 @@ curl -X POST http://127.0.0.1:8000/api/courses -H 'Content-Type: application/jso
 - Modify: `apps/web/src/App.tsx`
 - Modify: `apps/web/src/pages.tsx` → 新建 `apps/web/src/pages/course-pages.tsx`
 - Modify: `apps/web/src/styles.css`
+- Create: `apps/web/src/features/course/course-form.ts`（计划外：12 个字段的清单、
+  客户端校验与请求体装配；拆出来是为了让 `course-pages.tsx` 留在 500 行以内）
 
 **接口**
 - Consumes: P1.7 的 `POST /api/courses`

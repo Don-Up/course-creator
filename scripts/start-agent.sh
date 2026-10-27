@@ -118,7 +118,17 @@ trap cleanup EXIT
   cd "$API_ROOT"
   # 用 `python -m uvicorn` 而不是 `$VENV_ROOT/bin/uvicorn`：Windows 虚拟环境
   # 的可执行文件在 `Scripts/`，直接写死 `bin/` 会在 Windows 上找不到。
-  exec "$VENV_PY" -m uvicorn app.main:app --host 127.0.0.1 --port "$API_PORT"
+  #
+  # --reload：后端改完代码自动生效，不用每次手动重启进程（前端 vite 本来就有
+  # 热更新，两边体验一致）。不加这个的话，跑着的进程永远是启动那一刻的代码，
+  # 新加的路由会安静地变成 405。
+  #
+  # --reload-dir app：把监听范围收在 app 源码目录。不指定的话 uvicorn 监听当前
+  # 工作目录（这里是 apps/api），会把 .venv 一起拖进去 —— watchfiles 的默认忽略
+  # 名单里并没有 .venv。uvicorn 的过滤器只匹配 *.py，可 .venv 里全是 .py，
+  # 装个包就会把进程重启一遍。收窄到 app 之后只有源码改动才重启。
+  exec "$VENV_PY" -m uvicorn app.main:app --host 127.0.0.1 --port "$API_PORT" \
+    --reload --reload-dir app
 ) &
 API_PID=$!
 
