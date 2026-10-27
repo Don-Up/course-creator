@@ -7,7 +7,8 @@ impossible value before it reaches a stage output.
 
 The thirteen models P1.3 needs live here, plus the `CourseCreate` that
 P1.5 added for the intake form: it is the one request model of this
-module.  The workspace schemas arrive with P3.8.
+module.  P1.6 adds the two response models of the course list.  The
+workspace schemas arrive with P3.8.
 """
 
 from __future__ import annotations
@@ -155,3 +156,25 @@ class CourseCreate(BaseModel):
     token_budget_mtokens: float | None = Field(default=None, ge=0.01, le=10000)
     provider: str = "codex_gateway"
     model: str = "llm-gateway--kimi-k3"
+
+
+class CourseSummary(BaseModel):
+    """One course as the course list shows it.
+
+    The six fields are the ones `app.courses.catalog` reads out of the
+    course file.  A course that has not been generated yet is a course with
+    zero chapters, and its status is "preparing".
+    """
+
+    slug: str
+    title: str
+    description: str
+    chapters: int
+    status: str
+    duration: str
+
+
+class CourseList(BaseModel):
+    """The answer of `GET /api/courses`."""
+
+    items: list[CourseSummary]

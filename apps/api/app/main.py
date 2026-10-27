@@ -4,8 +4,10 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.course_routes import router as course_router
 from app.api.system_routes import router as system_router
-from app.catalog import EXAMPLE_COURSE_ROOT
+from app.config import get_settings
 
+
+EXAMPLE_COURSE_ROOT = get_settings().courses_root / "advanced-learning-of-obsidian"
 
 app = FastAPI(title="AI Course Studio Scaffold API", version="0.1.0")
 app.add_middleware(

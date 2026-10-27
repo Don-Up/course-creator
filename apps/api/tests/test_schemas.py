@@ -32,12 +32,14 @@ EXPECTED_MODELS = frozenset(
         "RepairCapabilityPlan",
         "OutputPresentation",
         "CourseCreate",
+        "CourseSummary",
+        "CourseList",
     }
 )
 
 
 def test_schemas_module_exposes_exactly_the_agreed_models():
-    """P1.3 owns thirteen models and P1.5 adds the intake model.
+    """P1.3 owns thirteen models, P1.5 the intake and P1.6 the course list.
 
     The set is pinned so that a schema cannot slip in early: the workspace
     schemas belong to P3.8.

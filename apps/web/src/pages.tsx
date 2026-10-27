@@ -61,9 +61,6 @@ function CourseCard({ course }: { course: Course }) {
       </div>
       <h2>{course.title}</h2>
       <p>{course.description}</p>
-      <a className="course-link" href={course.href}>
-        浏览已发布课程
-      </a>
     </article>
   );
 }

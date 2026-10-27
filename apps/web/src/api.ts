@@ -7,7 +7,6 @@ export type Course = {
   slug: string;
   title: string;
   description: string;
-  href: string;
   chapters: number;
   duration: string;
   status: string;

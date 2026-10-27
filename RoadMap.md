@@ -1398,23 +1398,130 @@ npm run check:source-size
 - Create: `apps/api/app/course_service.py`
 - Delete: `apps/api/app/catalog.py`
 - Modify: `apps/api/app/api/course_routes.py`
+- Modify: `apps/api/app/main.py`（`app/catalog.py` 删掉之后 `EXAMPLE_COURSE_ROOT` 没有出处了）
+- Modify: `apps/api/app/schemas.py`（加 `CourseSummary` / `CourseList` 两个响应模型）
+- Modify: `apps/api/tests/test_schemas.py`（模型清单加这两个）
+- Create: `apps/api/tests/test_course_catalog.py`
+- Create: `apps/api/tests/test_course_service.py`
+- Modify: `apps/api/tests/test_scaffold_api.py`（旧的 `catalog.json` 断言要同步）
+- Modify: `apps/web/src/api.ts`（`Course` 类型去掉 `href`）
+- Modify: `apps/web/src/pages.tsx`（去掉指向 `course.href` 的那条死链）
 
 **接口**
-- Consumes: P1.5
-- Produces: `app/courses/catalog.py::list_courses(courses_root) -> list[dict]`；`get_course(slug, courses_root) -> dict | None`；`app/course_service.py::list_courses()` / `get_course(slug)`（门面，供路由调用）
+- Consumes: P1.5 落盘的 `course.json`（11 个键）
+- Produces:
+  - `app/courses/catalog.py::list_courses(courses_root: Path) -> list[dict[str, Any]]`
+  - `app/courses/catalog.py::get_course(slug: str, courses_root: Path) -> dict[str, Any] | None`
+  - `app/course_service.py::list_courses() -> list[dict[str, Any]]`（门面，root 来自 `Settings`）
+  - `app/course_service.py::get_course(slug: str) -> dict[str, Any] | None`（门面）
+  - `app/schemas.py::CourseSummary` / `app/schemas.py::CourseList`
+  - `GET /api/courses` → `{"items": [...]}`；`GET /api/courses/{slug}` → 一项 / 404 / 400
+
+**写代码时的硬约定**
+
+**目录项的形状——恰好 6 个键，一个不多一个不少：**
+
+| 键 | 从哪儿来 | 说明 |
+| --- | --- | --- |
+| `slug` | 课程文件夹名 | 文件夹名就是课程的地址；`course.json` 里的 `slug` 与它同值（P1.5 两处都写 `request.slug`） |
+| `title` | `course.json` 的 `title` | 缺失时退回文件夹名 |
+| `description` | `course.json` 的 `description` | P1.5 写进去的是 `request.goals`；缺失时是空串 |
+| `chapters` | `len(course.json` 的 `lessons`)` | `lessons` 不是列表时算 0 |
+| `status` | `course.json` 的 `status` | 缺失时是 `"preparing"` |
+| `duration` | `course.json` 的 `duration` | 缺失时是空串 |
+
+**目录项里没有的东西（别加）：** `href` · `audience` · `goals` · `scope` ·
+`preferred_chapter_count` · `lessons` 本身。
+
+- **`href` 为什么消失**：老 `catalog.json` 里的 `href` 是手写的 `/course-example/`，
+  指向**唯一那一个**手挂的静态示例。改成扫描之后，每门课都可能有 `index.html`，
+  但 API 现在**没有**按课程提供静态页的路由（P8.1 的构建 + 按课程发布才会给），
+  硬造一个 `href` 就是造一个 404 的地址。前端卡片那条链因此先拿掉，
+  P1.8 会用真正的 `/courses/:slug` 路由把它加回来。
+- **`courses/catalog.json` 这个文件留着**，只是 API 不再读它了——
+  它以后只当**发布索引**（P8.x 的 `publish_course` 往里写）。
+  这条同时解掉「目标版已知缺陷 #9：catalog.json 与 API 课程列表是两个独立来源」。
+
+**扫描时跳过什么（跳过 ≠ 报错）：**
+
+1. 没有 `course.json` 的子目录 → 跳过（课程还在建，没到落盘那一步）。
+2. `course.json` 读不出来 / 不是合法 JSON / 不是一个对象 → 跳过。
+   **一个坏掉的课程不能拖垮整个列表**——列表接口是给人看的，不是给错误页看的。
+3. 以 `.` 开头的文件夹 → 跳过（隐藏目录）。
+4. 文件夹名不匹配 `SLUG_PATTERN` 的目录 → 跳过。
+   这种目录没法用地址访问（`get_course` 会抛 `ValueError`），
+   留在列表里就是一门「点不开的课程」。
+
+**两种「找不到」要分清：**
+
+| 情况 | `catalog.get_course` | 路由层 |
+| --- | --- | --- |
+| slug **合法**但没有这门课 | 返回 `None`，**不抛异常** | 404 |
+| slug **不合法**（`../etc`、`Python-101`） | 抛 `ValueError("课程 slug 不合法")` | 400 |
+
+P1.4 的路径护栏不能被绕过：`get_course` 内部**必须**走
+`app.courses.common._safe_course_root(slug, courses_root)`，
+不要自己拼路径。
+
+**分层职责：**
+- `app/courses/catalog.py`：**唯一**读 `course.json` 的地方。`courses_root` **显式传参**，
+  不读 `Settings`（跟 P1.4 / P1.5 同一个规矩）。
+- `app/course_service.py`：门面。`list_courses()` / `get_course(slug)` 从
+  `get_settings().courses_root` 拿到 root 再转手给 `catalog`。
+  路由只认门面，不直接 import `catalog`。
+- `app/api/course_routes.py`：只做「调门面 → 变成 HTTP 响应」。
+
+**不许 import 的东西（还没到那个阶段）：**
+`app.courses.quality`（P5.x）· `app.courses.workspace`（P2.x）· `app.courses.chapters`（P3.x）·
+`app.courses.tools`（P4.x）· `app.db`（P2.1）· `app.workflow.*`（P2.x 起）·
+`app.agents.*` 之外的任何 LLM Provider 入口。
+
+**参考实现不要照抄的四处：**
+1. 参考的 `list_courses()` 读 `Settings` 单例、还 import 了 `app.courses.quality` 和 `app.db`——
+   那是 P5.x / P2.1 的东西，本阶段拿不到。
+2. 参考的目录项叫 `chapter_count`、还带一堆 `quality_report_count` / `has_workspace` /
+   `has_course_json` / `lessons`——本阶段的目录项就是上面那张 6 键表。
+3. 参考的 `get_course()` 找不到就抛 `FileNotFoundError`；本阶段是**返回 `None`**。
+4. 参考的 `list_courses()` 把**没有 `course.json` 的目录也列出来**（靠 `has_course_json` 标记）——
+   本阶段是**直接跳过**。
+
+**其它约定：**
+- 每个函数都要写完整文档注释（说明 + `Args` + `Returns`），中文说明、英文标识符。
+- `from typing import Any` 别漏（返回类型是 `dict[str, Any]`）。
+- 单行不超过 **92** 字符（中文按 2 列算）。
+- `npm run check:source-size` 过了（新文件都远低于 500 行）。
+- **不要** `git add` / `git commit` / `git push`——提交由开发者自己做。
 
 **步骤**
-- [ ] 写测试：`list_courses()` 扫描 `courses/*/course.json`，返回的每项含 `slug` / `title` / `description` / `chapters` / `status`
-- [ ] 写测试：`get_course("不存在的 slug")` → `None`，**不抛异常**
-- [ ] 写测试：目录里没有 `course.json` 的子目录被**跳过**，不报错
-- [ ] 跑测试 → FAIL → 实现 → PASS
-- [ ] 删除 `app/catalog.py`，改 `course_routes.py` 走 `course_service`
-- [ ] 跑 `pytest apps/api/tests` → 全绿（旧的 `test_scaffold_api.py` 也要同步）
-- [ ] 提交：`git commit -m "feat: 课程列表改为文件系统扫描"`
+- [ ] 写 `test_course_catalog.py`：扫描 `courses/*/course.json`，每项含 `slug` / `title` /
+      `description` / `chapters` / `status` / `duration`，**恰好这 6 个键**
+- [ ] 写 `test_course_catalog.py`：`get_course("不存在的 slug")` → `None`，**不抛异常**
+- [ ] 写 `test_course_catalog.py`：目录里没有 `course.json` 的子目录被**跳过**，不报错
+- [ ] 写 `test_course_catalog.py`：`course.json` 坏掉的课程被跳过，其它课程照常列出
+- [ ] 写 `test_course_catalog.py`：隐藏目录、非法文件夹名被跳过；root 不存在时返回空列表
+- [ ] 写 `test_course_catalog.py`：`get_course` 传非法 slug → `ValueError`（路径护栏没被绕过）
+- [ ] 写 `test_course_service.py`：门面从 `Settings.courses_root` 拿 root（用 `monkeypatch`
+      换掉 `app.course_service.get_settings`，指向 `tmp_path`）
+- [ ] 跑测试 → FAIL → 实现 `catalog.py` + `course_service.py` → PASS
+- [ ] 加 `CourseSummary` / `CourseList` 到 `app/schemas.py`，同步 `test_schemas.py` 的模型清单
+- [ ] 改 `course_routes.py` 走门面：列表 + `GET /api/courses/{slug}`（404 / 400）
+- [ ] 删掉 `app/catalog.py`，改 `app/main.py` 的 `EXAMPLE_COURSE_ROOT` 出处
+      （用 `get_settings().courses_root / "advanced-learning-of-obsidian"`）
+- [ ] 同步 `test_scaffold_api.py`：旧的 `catalog.json` 断言改成扫描后的形状
+- [ ] 改前端：`api.ts` 的 `Course` 去掉 `href`，`pages.tsx` 去掉那条死链
+- [ ] 跑 `pytest apps/api/tests` → 全绿
+- [ ] 跑 `npm --prefix apps/web run typecheck` → 0 error；`run build` → 成功
+- [ ] 写一份改动说明到 `docs/changes/2026-10-27/`（格式照 `.claude/skills/code-change-report/SKILL.md`，
+      报告里出现的函数都要带文档注释）
+- [ ] **不要** `git add` / `git commit` / `git push`——提交由开发者自己做
 
 **验收**
 ```bash
+apps/api/.venv/Scripts/python.exe -m pytest apps/api/tests -v
 apps/api/.venv/bin/python -m pytest apps/api/tests -v
+npm --prefix apps/web run typecheck
+npm --prefix apps/web run build
+npm run check:source-size
 curl http://127.0.0.1:8000/api/courses
 ```
 
