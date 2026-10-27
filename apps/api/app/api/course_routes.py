@@ -18,6 +18,7 @@ from app.course_service import (
     create_course,
     get_course,
     list_courses,
+    list_chapters,
     read_chapter,
     read_workspace_file,
     save_chapter,
@@ -25,6 +26,7 @@ from app.course_service import (
 )
 from app.courses.common import ConcurrencyConflict
 from app.schemas import (
+    ChapterList,
     ChapterRead,
     ChapterSave,
     CourseCreated,
@@ -34,9 +36,16 @@ from app.schemas import (
     WorkspaceFileRead,
     WorkspaceFileSave,
 )
+from app.workflow.repository import create_run_record
 
 
 router = APIRouter(prefix="/api/courses", tags=["courses"])
+
+# The mode of the run that a course creation opens.  The run of a course
+# that is being built from scratch is "guided": it walks the seven stages
+# in order.  The mode of a review of an existing course is "review", and
+# that one is opened by the review entry of a later phase.
+INTAKE_RUN_MODE = "guided"
 
 
 def _http_error(error: Exception) -> HTTPException:
@@ -98,6 +107,13 @@ def create_course_from_intake(payload: CourseCreate) -> CourseCreated:
     left is answered with a status code per failure: 409 when the slug is
     taken, 400 when the path guard refuses the slug.
 
+    The course is written first and the run is opened afterwards, so a
+    refused creation leaves no run behind: the run of a course that does
+    not exist would be a run nobody can continue.  The other way round is
+    not true -- when the run cannot be written the course is already on
+    the disk, and the answer is a 500 rather than a course without a
+    trace of where it came from.
+
     Args:
         payload: The intake form the user submitted, for example a
             CourseCreate with the slug "python-101".
@@ -116,11 +132,48 @@ def create_course_from_intake(payload: CourseCreate) -> CourseCreated:
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     summary = CourseSummary(**course)
+    run_id = str(uuid.uuid4())
+    create_run_record(
+        run_id,
+        payload.slug,
+        INTAKE_RUN_MODE,
+        payload.provider,
+        payload.model,
+        payload.model_dump(),
+        budget_policy={"token_budget_mtokens": payload.token_budget_mtokens},
+    )
     return CourseCreated(
         course=summary,
-        run_id=str(uuid.uuid4()),
+        run_id=run_id,
         status=summary.status,
     )
+
+
+@router.get("/{slug}/chapters", response_model=ChapterList)
+def read_chapters(slug: str) -> ChapterList:
+    """Answer with the chapters of a course.
+
+    The list is what the browser needs to show a chapter picker: the
+    course summary of the API carries the *number* of chapters, but not
+    which ones they are.  The key of every item is the key the single
+    chapter route accepts, so an item of this list can be read back
+    without a second guess.
+
+    Args:
+        slug: The short name of the course, for example "python-101".
+
+    Returns:
+        The chapters of the course, in the order of the course file.
+    Raises HTTPException(404) when there is no such course, and
+        HTTPException(400) when the slug is illegal.
+    """
+    try:
+        chapters = list_chapters(slug)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return ChapterList(items=chapters)
 
 
 @router.get("/{slug}/chapters/{key:path}", response_model=ChapterRead)

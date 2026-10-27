@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "slug": "test",
+  "title": "test",
+  "description": "xxxxx",
+  "audience": "xxxxxx",
+  "goals": "xxxxx",
+  "scope": "xxxxx",
+  "duration": "待蓝图确认",
+  "status": "preparing",
+  "preferred_chapter_count": 12,
+  "lessons": []
+}

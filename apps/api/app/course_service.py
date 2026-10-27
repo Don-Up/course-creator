@@ -29,6 +29,7 @@ __all__ = [
     "create_course",
     "get_course",
     "list_courses",
+    "list_chapters",
     "read_chapter",
     "read_workspace_file",
     "save_chapter",
@@ -104,6 +105,22 @@ def _course_root(slug: str) -> Path:
     if not root.is_dir():
         raise FileNotFoundError(f"课程不存在：{slug}")
     return root
+
+
+def list_chapters(slug: str) -> list[dict[str, Any]]:
+    """List the chapters of one course.
+
+    Args:
+        slug: The short name of the course, for example "python-101".
+
+    Returns:
+        One item per chapter: the key, the number, the title and the path
+        of the chapter inside the course.
+    Raises ValueError("课程 slug 不合法") when the slug does not match
+        the shared pattern, and FileNotFoundError when there is no such
+        course.
+    """
+    return chapters.list_chapters(_course_root(slug))
 
 
 def read_chapter(slug: str, key: str) -> dict[str, Any]:

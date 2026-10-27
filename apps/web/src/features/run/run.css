@@ -1,0 +1,318 @@
+/* The styles of the run workbench.
+   They live in their own file because the stylesheet of the whole app
+   is close to the size limit, and because the workbench is a part of the
+   app that can grow on its own. */
+
+.run-workspace {
+  max-width: 900px;
+}
+
+.workflow-map {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin: 32px 0 0;
+}
+
+.workflow-node {
+  display: grid;
+  gap: 4px;
+  padding: 12px 10px;
+  border: 1px solid #d6d9d2;
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workflow-node:hover {
+  border-color: #9aa79d;
+}
+
+.workflow-node.completed {
+  background: #f2f6f2;
+  border-color: #b7cdb9;
+}
+
+.workflow-node.active {
+  border-color: #1f6a3e;
+  box-shadow: inset 0 0 0 1px #1f6a3e;
+}
+
+.workflow-node.selected {
+  background: #eaf1ea;
+}
+
+.workflow-node-index {
+  color: #53735f;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.workflow-node-title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.workflow-node-state {
+  color: #778079;
+  font-size: 11px;
+}
+
+.run-stage {
+  margin: 24px 0 0;
+  padding: 20px 22px;
+  border: 1px solid #d6d9d2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.run-stage h2 {
+  font-size: 18px;
+}
+
+.run-stage dl {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px 16px;
+  margin: 16px 0 0;
+}
+
+.run-stage dt {
+  color: #778079;
+  font-size: 12px;
+}
+
+.run-stage dd {
+  margin: 0;
+  font-size: 14px;
+}
+
+.run-activity {
+  margin: 24px 0 0;
+  padding: 18px 22px;
+  border: 1px solid #d6d9d2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.run-activity-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.run-activity-heading strong {
+  font-size: 14px;
+}
+
+.run-elapsed {
+  margin-left: auto;
+  color: #53735f;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.run-activity-empty,
+.event-track-empty {
+  color: #778079;
+  font-size: 13px;
+}
+
+.run-activity-list,
+.event-track ol {
+  display: grid;
+  gap: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run-activity-list li {
+  display: grid;
+  grid-template-columns: 170px 1fr auto;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #eef0ea;
+  font-size: 13px;
+}
+
+.run-activity-type,
+.event-type {
+  color: #53735f;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.run-activity-list time,
+.event-track time {
+  color: #778079;
+  font-size: 11px;
+}
+
+.event-track {
+  margin: 24px 0 0;
+}
+
+.event-track h2 {
+  font-size: 18px;
+}
+
+.event-track ol {
+  border: 1px solid #d6d9d2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.event-track li {
+  display: grid;
+  grid-template-columns: 170px 110px 1fr auto;
+  gap: 12px;
+  padding: 10px 18px;
+  border-top: 1px solid #eef0ea;
+  font-size: 13px;
+}
+
+.event-track li:first-child {
+  border-top: none;
+}
+
+.event-step {
+  color: #778079;
+  font-size: 12px;
+}
+
+.chapter-preview {
+  margin: 32px 0 0;
+}
+
+.chapter-preview h2 {
+  font-size: 18px;
+}
+
+.chapter-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 0;
+}
+
+.chapter-picker button {
+  padding: 8px 14px;
+  border: 1px solid #d6d9d2;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #526057;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chapter-picker button.active {
+  border-color: #1f6a3e;
+  background: #f2f6f2;
+  color: #1f6a3e;
+  font-weight: 700;
+}
+
+.chapter-body {
+  margin-top: 16px;
+  padding: 22px 26px;
+  border: 1px solid #d6d9d2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.chapter-body h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.chapter-meta {
+  margin: 0 0 16px;
+  color: #778079;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.chapter-body p {
+  font-size: 14px;
+}
+
+.chapter-body pre {
+  overflow-x: auto;
+  padding: 14px;
+  border-radius: 6px;
+  background: #f5f6f1;
+  font-size: 13px;
+}
+
+.run-list {
+  max-width: 760px;
+}
+
+.run-list-items {
+  display: grid;
+  gap: 0;
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #d6d9d2;
+}
+
+.run-list-items li {
+  border-bottom: 1px solid #d6d9d2;
+}
+
+.run-list-items a {
+  display: grid;
+  grid-template-columns: 1fr 120px 140px auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 0;
+}
+
+.run-list-status {
+  color: #1f6a3e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.run-list-step {
+  color: #778079;
+  font-size: 13px;
+}
+
+.run-list-items time {
+  color: #778079;
+  font-size: 12px;
+}
+
+.spin {
+  animation: run-spin 1.1s linear infinite;
+}
+
+@keyframes run-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .workflow-map {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .event-track li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .run-activity-list li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

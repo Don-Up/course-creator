@@ -33,6 +33,173 @@ export type CourseCreated = {
   status: string;
 };
 
+export type ChapterSummary = {
+  key: string;
+  number: number;
+  title: string;
+  path: string;
+};
+
+/**
+ * The list of the courses, the shape the API answers with.
+ *
+ * The name is the one of the schema of the backend, so the two sides
+ * call the same thing by the same name.
+ */
+export type CourseList = {
+  items: Course[];
+};
+
+/**
+ * The list of the chapters of one course.
+ *
+ * The name is the one of the schema of the backend, so the two sides
+ * call the same thing by the same name.
+ */
+export type ChapterList = {
+  items: ChapterSummary[];
+};
+
+export type Chapter = {
+  key: string;
+  path: string;
+  content: string;
+  content_hash: string;
+  updated_at: string;
+  snapshot_path: string;
+};
+
+export type RunCommandRead = {
+  id: string;
+  kind: string;
+  status: string;
+  attempt_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RunRead = {
+  id: string;
+  course_slug: string;
+  mode: string;
+  status: string;
+  current_step: string;
+  provider: string;
+  model: string;
+  interrupt_type: string | null;
+  error_message: string | null;
+  trace_id: string | null;
+  created_at: string;
+  updated_at: string;
+  active_command: RunCommandRead | null;
+};
+
+export type RunEventRead = {
+  seq: number;
+  id: string;
+  event_type: string;
+  step: string;
+  message: string;
+  created_at: string;
+};
+
+export type RunArtifactRead = {
+  id: string;
+  step: string;
+  node: string;
+  title: string;
+  source: string;
+  presentation: Record<string, unknown>;
+  created_at: string;
+};
+
+export type WorkflowStepRead = {
+  id: string;
+  title: string;
+  description: string;
+  user_input: string;
+  model_output: string;
+  status: string;
+};
+
+export type RunDetail = {
+  run: RunRead;
+  events: RunEventRead[];
+  artifacts: RunArtifactRead[];
+  workflow_steps: WorkflowStepRead[];
+};
+
+export type RunSummary = {
+  id: string;
+  course_slug: string;
+  mode: string;
+  status: string;
+  current_step: string;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * The list of the runs, the shape the API answers with.
+ *
+ * The name is the one of the schema of the backend, so the two sides
+ * call the same thing by the same name.
+ */
+export type RunList = {
+  items: RunSummary[];
+};
+
+/**
+ * One node of the workflow topology.
+ *
+ * A node is one unit of work of the workflow.  The stage says which
+ * phase it belongs to, and the position says where it sits in the graph.
+ */
+export type WorkflowNode = {
+  id: string;
+  stage: string;
+  title: string;
+  description: string;
+  position: number;
+};
+
+/**
+ * One transition between two nodes of the workflow topology.
+ */
+export type WorkflowEdge = {
+  source: string;
+  target: string;
+};
+
+/**
+ * One phase of the workflow topology.
+ *
+ * The nodes are the ids of the units of work that belong to the phase.
+ */
+export type WorkflowPhase = {
+  id: string;
+  title: string;
+  description: string;
+  user_input: string;
+  model_output: string;
+  nodes: string[];
+};
+
+/**
+ * The topology of the workflow, the shape the API answers with.
+ *
+ * It is a projection of the graph of the workflow in the backend, so the
+ * browser never writes the topology down itself.
+ */
+export type WorkflowSnapshot = {
+  version: number;
+  id: string;
+  name: string;
+  phases: WorkflowPhase[];
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+};
+
 /**
  * The error a failed API answer turns into.
  *
@@ -105,11 +272,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /**
- * The four API calls the frontend makes.
+ * The API calls the frontend makes.
  */
 export const api = {
   health: () => request<Health>("/api/health"),
-  courses: () => request<{ items: Course[] }>("/api/courses"),
+  courses: () => request<CourseList>("/api/courses"),
   course: (slug: string) => request<Course>(`/api/courses/${encodeURIComponent(slug)}`),
   createCourse: (input: CourseCreate) =>
     request<CourseCreated>("/api/courses", {
@@ -117,4 +284,16 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     }),
+  chapters: (slug: string) =>
+    request<ChapterList>(
+      `/api/courses/${encodeURIComponent(slug)}/chapters`,
+    ),
+  chapter: (slug: string, key: string) =>
+    request<Chapter>(
+      `/api/courses/${encodeURIComponent(slug)}/chapters/${encodeURIComponent(key)}`,
+    ),
+  runs: () => request<RunList>("/api/runs"),
+  run: (runId: string) =>
+    request<RunDetail>(`/api/runs/${encodeURIComponent(runId)}`),
+  workflow: () => request<WorkflowSnapshot>("/api/workflow"),
 };

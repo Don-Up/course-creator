@@ -198,6 +198,26 @@ class CourseCreated(BaseModel):
     status: str
 
 
+class ChapterSummary(BaseModel):
+    """One chapter as the chapter list shows it.
+
+    The key is the one the single chapter route accepts, so a chapter
+    taken from the list can be read back without a second guess.  The
+    path is inside the course, never an absolute path of this machine.
+    """
+
+    key: str
+    number: int
+    title: str
+    path: str
+
+
+class ChapterList(BaseModel):
+    """The answer of `GET /api/courses/{slug}/chapters`."""
+
+    items: list[ChapterSummary] = Field(default_factory=list)
+
+
 class ChapterRead(BaseModel):
     """One chapter as the editor shows it.
 
@@ -380,3 +400,53 @@ class RunList(BaseModel):
     """The answer of `GET /api/runs`."""
 
     items: list[RunSummary] = Field(default_factory=list)
+
+
+class WorkflowNodeRead(BaseModel):
+    """One node of the workflow topology as the browser sees it.
+
+    The node is one unit of work of the workflow.  The stage says which
+    phase it belongs to, and the position says where it sits in the graph.
+    """
+
+    id: str
+    stage: str
+    title: str
+    description: str
+    position: int
+
+
+class WorkflowEdgeRead(BaseModel):
+    """One transition between two nodes of the workflow topology."""
+
+    source: str
+    target: str
+
+
+class WorkflowPhaseRead(BaseModel):
+    """One phase of the workflow topology as the browser sees it.
+
+    The nodes are the ids of the units of work that belong to the phase.
+    """
+
+    id: str
+    title: str
+    description: str
+    user_input: str
+    model_output: str
+    nodes: list[str] = Field(default_factory=list)
+
+
+class WorkflowSnapshotRead(BaseModel):
+    """The answer of `GET /api/workflow`.
+
+    The topology of the workflow, as the graph of the workflow says: the
+    phases, the nodes and the transitions between the nodes.
+    """
+
+    version: int
+    id: str
+    name: str
+    phases: list[WorkflowPhaseRead] = Field(default_factory=list)
+    nodes: list[WorkflowNodeRead] = Field(default_factory=list)
+    edges: list[WorkflowEdgeRead] = Field(default_factory=list)

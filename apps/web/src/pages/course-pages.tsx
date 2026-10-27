@@ -17,17 +17,6 @@ import {
 } from "../features/course/course-form";
 
 
-const workflowSteps = [
-  ["intake", "接收并校验课程意图"],
-  ["mission", "形成可审阅的任务定义"],
-  ["blueprint", "规划课程结构与学习路径"],
-  ["batch_plan", "安排可控的生成批次"],
-  ["generation", "生成候选课程内容"],
-  ["quality", "形成质量证据与修复结论"],
-  ["release", "由人做出发布决定"],
-];
-
-
 /**
  * The landing page: the health of the API and the list of local courses.
  *
@@ -420,33 +409,6 @@ export function CourseWorkspace() {
           </p>
         </>
       )}
-    </section>
-  );
-}
-
-
-/**
- * The page that shows the seven stages of the course production.
- *
- * @returns The page with the seven stages and what each of them does.
- */
-export function WorkflowPage() {
-  return (
-    <section className="workflow-page">
-      <p className="eyebrow">Product contract</p>
-      <h1>七阶段课程生产工作流</h1>
-      <p>这是待实现的产品蓝图，当前脚手架不执行工作流、不调用模型，也不保存运行记录。</p>
-      <ol className="workflow-list">
-        {workflowSteps.map(([id, description], index) => (
-          <li key={id}>
-            <span>{String(index + 1).padStart(2, "0")}</span>
-            <div>
-              <strong>{id}</strong>
-              <p>{description}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
     </section>
   );
 }

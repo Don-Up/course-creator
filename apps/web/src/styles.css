@@ -184,6 +184,16 @@ p {
   margin: 6px 0 0;
 }
 
+.workflow-list p.workflow-next {
+  color: #53735f;
+  font-size: 13px;
+}
+
+.workflow-counts {
+  color: #53735f;
+  font-size: 13px;
+}
+
 .notice.error p {
   color: inherit;
 }

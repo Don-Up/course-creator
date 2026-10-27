@@ -33,17 +33,27 @@ description: Generate a code change summary report focused on business flow and 
 
 ### 第二部分：数据流
 
-按"用户操作路径或场景"拆成 N 个 `###` 子段(标题要通俗易懂，最多不超过3个，挑重要的，与项目心智模型密切相关的)；每个子段 = 1 个 `dataflow` 块。每个dataflow块由数据流图 + JSON 讲解 + 代码区域构成。
+为当前任务总结除1-2条核心数据流(标题要通俗易懂，挑重要的，与项目心智模型密切相关的)；每个子段 = 1 个 `dataflow` 块。每个dataflow块由数据流图 + JSON 讲解 + 代码区域构成。
 
 数据图 + JSON 讲解 + 代码区域必须放在同一个```dataflow```块中，用"---"行隔开，代码区域无需放入一个```某种代码语言```块中。 "---"行在```dataflow```块中只能出现两次，不要在一个代码区域内的不同的代码片段之间插入"---"。
 
-另外，在每篇数据流```dataflow```之前放置一个简化版的mermaid流程图或时序图，用来在阅读数据流之前进行"热身"。
+另外，在每篇数据流```dataflow```之前放置一个简化版的mermaid流程图或时序图，用来在阅读数据流之前进行"热身"；流程图下面再补一张 3 列表格，把图里画不出来的信息补齐。
 
 返回格式:
 
 ```mermaid
-简化版的流程图/时序图
+<简化版流程图:只画主干和分支,不要画细节;节点用中文短句>
 ```
+
+| 步骤简称 | 状态快照 | 说明 |
+| --- | --- | --- |
+| <该节点涉及的几步简称,用→连接> | <变量名[简介]: 当前值> | <这一步对用户意味着什么> |
+
+其中:
+
+- **步骤简称** —— 取数据流图里每一步的中文简称(如 `连接抖断`、`计失败`);一个节点跨了多步就用 `→` 连接,例如 `连接抖断 → 计失败 → setState → 关源`。
+- **状态快照** —— 该节点走完之后相关变量的**当前值**,格式和 JSON 讲解里【】里面完全一致:`变量名[简介]: 当前值`,多个变量用 `<br>` 换行。**简介用中文**,写清这个变量是什么。
+- **说明** —— 该节点对用户意味着什么,和 JSON 讲解里【】左边的补充解释保持一致。
 
 ```dataflow
 数据流图
@@ -80,10 +90,15 @@ JSON讲解
 
 #### JSON讲解注意事项
 
-包含对当前步骤的通俗化讲解(非技术背景的人大致也能理解)，和关键变量变化流(多个变量用\n分隔)。**讲解部分一律用英文**(包括【】里的变量说明),按照下面这个公式来:
+每一步的讲解分成两段，中间用【】隔开:
+
+- **【】左边 —— 当前步骤的补充解释**。数据流图那一行只说了"做了什么"，这里补上"这意味着什么、用户会看到什么"。**不要复述代码**(代码图里已经有了)，只讲后果和用户能感知到的效果。
+- **【】里面 —— 当前步骤的状态快照**。这一步走完之后，各相关变量的**当前值**，格式 `变量名[这个变量是什么]: 当前值`，多个变量用 `\n` 分隔。**只写当前值，不写箭头**(`值1 → 值2` 这种变化流不要写)——下一步的快照本身就说明了变化。
+
+**叙述部分一律用英文**;但【】里的**变量简介用中文**,和图里 ruby 注音的中文解释保持一致。按照下面这个公式来:
 
 {
-  "步骤序号":"plain English narration【techVar1[what this variable means]: value1 → value2\ntechVar2[what this variable means]: value1 → value2 → value3】"
+  "步骤序号":"supplementary explanation of this step【techVar1[这个变量是什么]: current value\ntechVar2[这个变量是什么]: current value】"
 }
 
 讲解使用英文，适合TTS朗读，优先使用通俗易懂的表达，而不是艰涩的代码和技术名词。
@@ -95,19 +110,19 @@ JSON讲解
 
 ##### 不好的讲解: 纯技术讲解
 
-canAccept looks up REGISTRY['tabs'].slots[0] = {key:'tab-1', accepts:['btn','text']} and sees btnsitting in the whitelist → true.
+canAccept looks up REGISTRY['tabs'].slots[0] = {key:'tab-1', accepts:['btn','text']} and sees btn sitting in the whitelist → true.
 
 ##### 推荐的讲解: 通俗化讲解或技术+通俗化讲解
 
-1. 通俗化讲解: canAccept checks the whitelistof tab-1, and lets 'btn' through because it is in there.
+1. 通俗化讲解: canAccept checks the whitelist of tab-1, and lets 'btn' through because it is in there.
 2. 技术+通俗化讲解(技术表达后面要跟一句通俗解释，讲解用英文时写成 "which means" / "that means")，例如: 
-   a. handleDrop reads dataTransfer.getData("application/x-lowcode-id") and gets 'card', which means the component idthat was dragged in is 'btn'.
-     b. closest("[data-slot-zone]") hits the tab-1 zone div, which means the drop landed on the droppable areaof tab-1.
+   a. handleDrop reads dataTransfer.getData("application/x-lowcode-id") and gets 'card', which means the component id that was dragged in is 'btn'.
+     b. closest("[data-slot-zone]") hits the tab-1 zone div, which means the drop landed on the droppable area of tab-1.
 
 ##### 变量性质或含义要简短易懂:
 
-1. 不好的做法: raw[the entryId string read by DataTransfer.getData]
-2. 好的做法(读者一目了然): raw[the component id that was dragged in]
+1. 不好的做法: raw[entryId 字符串,DataTransfer.getData 读出来的]
+2. 好的做法(读者一目了然): raw[拖进来的那个组件 id]
 
 #### 代码片段注意事项
 
@@ -132,6 +147,38 @@ canAccept looks up REGISTRY['tabs'].slots[0] = {key:'tab-1', accepts:['btn','tex
 
 
 例如:
+
+```mermaid
+flowchart TD
+    ERR(["长连接断开 onerror"]) --> CNT["失败次数 +1"]
+    CNT --> BR{"失败不到 3 次?"}
+    BR -->|是| WAIT["按退避表等待<br/>1s / 2s / 5s / 10s"]
+    WAIT --> RECON["重开一条长连接"]
+    RECON -->|通了| LIVE["回到实时模式<br/>失败计数清零"]
+    RECON -->|没通| ERR
+    BR -->|否| POLL["切到轮询模式<br/>徽标变黄"]
+    POLL --> PROBE["30 秒后再探一次"]
+    PROBE -->|通了| LIVE
+    PROBE -->|没通| POLL
+
+    OFF(["浏览器断网 offline"]) --> CLOSE["关连接 + 清定时器<br/>徽标变红"]
+    BACK(["网络恢复 online"]) --> RESET["清空状态 + 立刻重连"]
+    HIDE(["切走标签页 hidden"]) --> QUIET["关连接 + 清定时器<br/>徽标不变"]
+    SHOW(["切回标签页 visible"]) --> FRESH["立刻拉一次最新数据"]
+    FRESH --> RESET
+```
+
+| 步骤简称 | 状态快照 | 说明 |
+| --- | --- | --- |
+| 连接抖断 → 计失败 → setState → 关源 | `EventSource.readyState[长连接当前的状态]: connecting`<br>`consecutiveFailuresRef.current[连着失败了几次]: 1`<br>`sourceRef.current[指向长连接的指针]: gone` | The long link drops. The helper counts the failure, shows the number on screen, and shuts the broken connection down. |
+| 算下次退避 → failCount<3 → 退避序列 | `failCount[失败次数]: 1`<br>`backoff[这一次要等多久]: 1 second` | It checks how many times in a row this has gone wrong, then waits 1 second before the next try. |
+| 到点重建 → open 成功 | `reconnectTimerRef.current[等一会儿再动的闹钟]: set`<br>`consecutiveFailuresRef.current[连着失败了几次]: 0`<br>`mode[当前连接方式]: live` | The alarm rings, a brand new long connection opens, and the page goes back to live mode. |
+| failCount>=3 → 列表自动轮询 → 30s probe | `mode[当前连接方式]: polling`<br>`refetchInterval return value[列表多久自己刷一次]: every 3 seconds`<br>`probeTimer.current[30 秒后再试一次的闹钟]: set` | After 3 failures in a row it stops rushing, asks the list for fresh data every 3 seconds, and still tries the long link every 30 seconds. |
+| 切 Badge | `CONNECTION_BADGE['polling'][轮询时显示的小徽标]: yellow` | The badge turns yellow, so the user knows the live link is gone and polling took over. |
+| 浏览器断网 → 强制关 → 切 Badge | `navigator.onLine[电脑有没有联网]: no`<br>`sourceRef.current[指向长连接的指针]: gone`<br>`mode[当前连接方式]: offline` | If the network drops completely, the helper closes everything and the badge turns red. |
+| 网络恢复 → 强制重连 | `navigator.onLine[电脑有没有联网]: yes`<br>`mode[当前连接方式]: connecting` | When the network comes back, the helper clears all its state and reconnects from scratch. |
+| 用户切走标签 → 关 SSE | `document.hidden[这一页有没有被藏起来]: hidden`<br>`sourceRef.current[指向长连接的指针]: gone`<br>`mode[当前连接方式]: live, no flicker` | When the user leaves the tab, the helper closes the link and the timers, but leaves the badge alone. |
+| 用户切回标签 → invalidate → 重建 | `document.hidden[这一页有没有被藏起来]: not hidden`<br>`React Query cache ['export-jobs'][浏览器记住的那份列表]: marked stale`<br>`sourceRef.current[指向长连接的指针]: a new connection` | When the user comes back, the helper pulls fresh data first, then opens a new link if one is needed. |
 
 ```dataflow
 1-01 (连接抖断) [[EventSource]]服务器实时推送通道}} 触发 [[onerror()]]连接失败回调}},可能是网络瞬断或后端关停 <{useExportEvents.ts}>
@@ -159,30 +206,30 @@ canAccept looks up REGISTRY['tabs'].slots[0] = {key:'tab-1', accepts:['btn','tex
 6-03           ↳ [重建] [[sourceRef]]指向长连接的指针}} 为 null 时调 [[forceOnlineRef]]恢复联网时强制重连的开关}}.current() 重新建 [[EventSource]]服务器实时推送通道}} <{useExportEvents.ts}>
 ---
 {
-  "1-01": "The long connectionjust dropped. It might be the networkflickering, or the servershutting down.【EventSource.readyState[whether it is connected]: connected → connecting\nbrowser hint[what went wrong]: fires the error event】",
-  "1-02": "The helper quietly counts the failureson the inside.【consecutiveFailuresRef.current[the failure count]: 0 → 1 (bumped in sync)】",
-  "1-03": "It also bumps the numberthe user can see by one, and switches the state back to connecting.【consecutiveFailures(React state)[the failures on screen]: 0 → 1\nmode[the connection mode]: live → connecting】",
-  "1-04": "It shuts down the connectionthat is already broken, so nothing keeps using it.【EventSource instance[that broken connection]: open → closed\nsourceRef.current[a small pointer to the connection]: there → gone】",
-  "1-05": "It peeks at the internal counterto decide the next move.【failCount[the failure count just now]: 1 (read out of that counter)】",
-  "1-06": "If it has not hit 3 yet, it tries again, but waits first, and waits longerevery time.【failCount(1) < 3[whether it can retry]: still fine → enters the retry branch\nreconnectTimerRef[the alarm that waits a while]: not set → about to set one】",
-  "1-07": "The first wait is 1 second, the second 2 seconds, the third 5 seconds, and after that it capsat 10 seconds.【BACKOFF_MS[the list of how long each wait is]: 1s/2s/5s/10s (picked by the failure count)】",
-  "1-08": "Once the wait is over, the helper opens a brand new long connection.【reconnectTimerRef.current[the alarm that waits a while]: not set → set (it will ring)\ncountdown[how many seconds are left on the alarm]: 0 → 1s/2s/5s/10s】",
-  "1-09": "The new connection comes up, the counter is cleared, and it goes back to live mode.【consecutiveFailuresRef.current[the failure count]: 1 → 0\nmode[the connection mode]: connecting → live\nEventSource.readyState[whether it is connected]: connecting → connected】",
-  "1-10": "If it has already failed 3 timesin a row, it stops rushingto reconnect, switches to polling, and tries again in 30 seconds.【mode[the connection mode]: connecting → polling\nprobeTimerRef.current[the alarm that tries again in 30 seconds]: not set → set】",
-  "1-11": "In polling mode the list asks the server for data every 3 seconds, but only while at least one jobis still running.【refetchInterval return value[how often the list refreshes itself]: never → every 3 seconds (only while a job is alive)】",
-  "1-12": "Every 30 seconds the helper tries the long connection again; if it works it goes back to live mode, if not it keeps polling.【probeTimer[the alarm that tries again in 30 seconds]: rings → try once\ntry result[whether this attempt worked]: worked → live; did not → keep polling】",
-  "2-01": "The badge turns yellow and says the live connection is unavailable and it has switched to polling, so the userknows what happened.【CONNECTION_BADGE['polling'][the small badge shown while polling]: live connection on → yellow 'live connection unavailable, switched to polling'】",
-  "3-01": "If the user's network drops completely, the browser sends an offline signal.【navigator.onLine[whether the computer is online]: yes → no\nwindow[the browser itself]: fires the offline event】",
-  "3-02": "The helper closes the long connection, clears every timer, and switches to offline mode.【sourceRef.current[a small pointer to the connection]: there → gone\nreconnectTimerRef.current[the alarm that waits a while]: there → gone\nmode[the connection mode]: live / polling → offline】",
-  "3-03": "The badge turns red and says the network is offline, so the user spots it at a glance.【CONNECTION_BADGE['offline'][the small badge shown while offline]: live connection on → red 'network offline'】",
-  "4-01": "The network comes back and the browser sends an online signal.【navigator.onLine[whether the computer is online]: no → yes\nwindow[the browser itself]: fires the online event】",
-  "4-02": "The helper clears every bit of state and reconnects from scratch.【consecutiveFailuresRef.current[the failure count]: anything → 0\nlastSeenVersions[the messages it has already seen]: anything → empty (all over again)\nmode[the connection mode]: current → connecting, ready to reconnect】",
-  "5-01": "The user switches to another tab and the browser sends a hidden signal.【document.hidden[whether this page is hidden]: not hidden → hidden\ndocument[that page]: fires the hidden event】",
-  "5-02": "The helper closes the long connection and clears the timers; the badge stays put, so nothing flickers and startles.【sourceRef.current[a small pointer to the connection]: there → gone\nevery timer (reconnect / probe)[the various alarms that wait]: there → gone\nmode[the connection mode]: stays live, no flicker】",
-  "6-01": "The user comes back and the browser sends a visible signal.【document.hidden[whether this page is hidden]: hidden → not hidden\ndocument[that page]: fires the visible event】",
-  "6-02": "The helper immediately asks the server for the freshest data, so the usersees something new.【React Query cache ['export-jobs'][the list the browser remembers]: old data → marked stale (it will refetch next time)】",
-  "6-03": "If the long connection is gone, it opens a new one.【sourceRef.current[a small pointer to the connection]: gone → a new one\nmode[the connection mode]: current → connecting → live】",
-  "Summary": "Summary: every connection error goes through the same little state machine. Fewer than 3 failures and the helper keeps trying with a steadily longer wait; at 3 the page quietly switches to polling every 3 seconds. The browser's offline event and the tab-switch-away event both feed this one state machine through the same setof switches, so going offline or switching away leaves no stray timers behind and never breaks the page."
+  "1-01": "The long link just dropped. It might be the network flickering for a moment, or the backend going down.【EventSource.readyState[长连接当前的状态]: connecting\nbrowser[出了什么事]: error event fired】",
+  "1-02": "The helper counts the failure on the inside, so it knows how many times in a row this has gone wrong.【consecutiveFailuresRef.current[连着失败了几次]: 1】",
+  "1-03": "It also bumps the number the user can see, and puts the badge back to 'connecting' so they know it is retrying.【consecutiveFailures[页面上显示的失败次数]: 1\nmode[当前连接方式]: connecting】",
+  "1-04": "It shuts down the connection that is already broken, so nothing keeps using it.【EventSource instance[那条已经断掉的连接]: closed\nsourceRef.current[指向长连接的指针]: gone】",
+  "1-05": "It peeks at the internal counter to decide the next move.【failCount[失败次数]: 1 (read out of that counter)】",
+  "1-06": "If it has not hit 3 yet, it tries again, but waits first, and waits longer every time.【failCount[失败次数]: 1 (still under 3)\nbranch[这次走哪条路]: the retry branch】",
+  "1-07": "The first wait is 1 second, the second 2 seconds, the third 5 seconds, and after that it caps at 10 seconds.【BACKOFF_MS[每次等多久的清单]: 1s / 2s / 5s / 10s (picked by the failure count)\nbackoff[这一次要等多久]: 1 second (the first failure)】",
+  "1-08": "Once the wait is over, the helper opens a brand new long connection.【reconnectTimerRef.current[等一会儿再动的闹钟]: set (it will ring)\ncountdown[闹钟上还剩多少秒]: 1 second】",
+  "1-09": "The new connection comes up, the counter is cleared, and it goes back to live mode.【consecutiveFailuresRef.current[连着失败了几次]: 0\nmode[当前连接方式]: live\nEventSource.readyState[长连接当前的状态]: connected】",
+  "1-10": "If it has already failed 3 times in a row, it stops rushing to reconnect, switches to polling, and tries again in 30 seconds.【mode[当前连接方式]: polling\nprobeTimer.current[30 秒后再试一次的闹钟]: set】",
+  "1-11": "In polling mode the list asks the server for data every 3 seconds, but only while at least one job is still running.【refetchInterval return value[列表多久自己刷一次]: every 3 seconds (only while a job is alive)】",
+  "1-12": "Every 30 seconds the helper tries the long connection again; if it works it goes back to live mode, if not it keeps polling.【probeTimer[30 秒后再试一次的闹钟]: ringing\nmode[当前连接方式]: live if the probe worked, still polling if it did not】",
+  "2-01": "The badge turns yellow and says the live connection is unavailable and it has switched to polling, so the user knows what happened.【CONNECTION_BADGE['polling'][轮询时显示的小徽标]: yellow, 'live connection unavailable, switched to polling'】",
+  "3-01": "If the user's network drops completely, the browser sends an offline signal.【navigator.onLine[电脑有没有联网]: no\nwindow[浏览器自己]: fired the offline event】",
+  "3-02": "The helper closes the long connection, clears every timer, and switches to offline mode.【sourceRef.current[指向长连接的指针]: gone\nreconnectTimerRef.current[等一会儿再动的闹钟]: gone\nmode[当前连接方式]: offline】",
+  "3-03": "The badge turns red and says the network is offline, so the user spots it at a glance.【CONNECTION_BADGE['offline'][离线时显示的小徽标]: red, 'network offline'】",
+  "4-01": "The network comes back and the browser sends an online signal.【navigator.onLine[电脑有没有联网]: yes\nwindow[浏览器自己]: fired the online event】",
+  "4-02": "The helper clears every bit of state and reconnects from scratch.【consecutiveFailuresRef.current[连着失败了几次]: 0\nlastSeenVersions[已经看过哪些消息]: empty (all over again)\nmode[当前连接方式]: connecting, ready to reconnect】",
+  "5-01": "The user switches to another tab and the browser sends a hidden signal.【document.hidden[这一页有没有被藏起来]: hidden\ndocument[当前网页]: fired the visibility change event】",
+  "5-02": "The helper closes the long connection and clears the timers; the badge stays put, so nothing flickers and startles.【sourceRef.current[指向长连接的指针]: gone\nevery timer (reconnect / probe)[各种会等的闹钟]: gone\nmode[当前连接方式]: live, no flicker】",
+  "6-01": "The user comes back and the browser sends a visible signal.【document.hidden[这一页有没有被藏起来]: not hidden\ndocument[当前网页]: fired the visibility change event】",
+  "6-02": "The helper immediately asks the server for the freshest data, so the user sees something new.【React Query cache ['export-jobs'][浏览器记住的那份列表]: marked stale (it will refetch next time)】",
+  "6-03": "If the long connection is gone, it opens a new one.【sourceRef.current[指向长连接的指针]: a new connection\nmode[当前连接方式]: live】",
+  "Summary": "Every connection error goes through the same little state machine. Fewer than 3 failures and the helper keeps trying with a steadily longer wait; at 3 the page quietly switches to polling every 3 seconds. The browser's offline event and the tab-switch-away event both feed this one state machine through the same set of switches, so going offline or switching away leaves no stray timers behind and never breaks the page."
 }
 ---
 // STEP FLOW: 1-01(连接抖断) → 1-02[计失败] → 1-03[setState] → 1-04[关源] → 1-05[算下次退避] → 1-06[failCount<3] → 1-07[退避序列] → 1-08[到点重建] → 1-09[open 成功] → 1-10[failCount>=3] → 1-11[列表自动轮询] → 1-12[30s probe] → 2-01(切 Badge) → 3-01(浏览器断网) → 3-02[强制关] → 3-03(切 Badge) → 4-01(网络恢复) → 4-02[强制重连] → 5-01(用户切走标签) → 5-02[关 SSE] → 6-01(用户切回标签) → 6-02[invalidate] → 6-03[重建]

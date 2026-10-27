@@ -156,6 +156,50 @@ def _updated_at(path: Path) -> str:
     return datetime.fromtimestamp(path.stat().st_mtime, UTC).isoformat()
 
 
+def list_chapters(course_root: Path) -> list[dict[str, Any]]:
+    """List the chapters of a course in the order the course file gives.
+
+    The lesson list of the course file is the only place that says which
+    chapter exists and what it is called, so the list is read from there
+    and not from the folder: a chapter that was planned but not written
+    yet is still a chapter of the course.
+
+    The key of a chapter is the one the single chapter route accepts, so
+    a key taken from this list can be read back with
+    `GET /api/courses/{slug}/chapters/{key}` without a second guess.
+
+    Args:
+        course_root: The folder of one course, for example
+            courses/python-101/.
+
+    Returns:
+        One item per chapter: the key, the number, the title and the path
+        of the Markdown file inside the course.  A lesson without a
+        Markdown file is left out, because there is nothing to read.
+    """
+    lessons = _read_metadata(course_root).get("lessons")
+    if not isinstance(lessons, list):
+        return []
+    items: list[dict[str, Any]] = []
+    for lesson in lessons:
+        if not isinstance(lesson, dict):
+            continue
+        markdown = str(lesson.get("markdown") or "")
+        if not markdown:
+            continue
+        raw_number = lesson.get("number")
+        number = raw_number if isinstance(raw_number, int) else None
+        items.append(
+            {
+                "key": str(raw_number) if raw_number is not None else Path(markdown).stem,
+                "number": number if number is not None else len(items) + 1,
+                "title": str(lesson.get("title") or Path(markdown).stem),
+                "path": markdown,
+            }
+        )
+    return items
+
+
 def read_chapter(course_root: Path, key: str) -> dict[str, Any]:
     """Read one chapter of a course.
 

@@ -12,6 +12,7 @@ export function Layout() {
             课程
           </NavLink>
           <NavLink to="/workflow">工作流</NavLink>
+          <NavLink to="/runs">运行</NavLink>
           <NavLink to="/new">新建课程</NavLink>
         </nav>
       </header>

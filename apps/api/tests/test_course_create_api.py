@@ -4,6 +4,10 @@
 root at a temporary directory.  A test that built a course in the
 repository's own `courses/` folder would leave a course behind that the
 next test run would see, and that nobody asked for.
+
+The creation also opens a run, and a run is a row in the database of the
+developer.  The temporary courses root therefore comes with a temporary
+database, so a test run never leaves a run behind either.
 """
 
 from __future__ import annotations
@@ -29,12 +33,20 @@ VALID_BODY: dict[str, object] = {
 
 
 @pytest.fixture()
-def courses_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def courses_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    use_temp_database: Path,
+) -> Path:
     """Point the course service at a temporary courses root.
+
+    The database of the developer is replaced by a throwaway file as
+    well, because the creation opens a run and a run is a database row.
 
     Args:
         tmp_path: The empty directory pytest provides for this test.
         monkeypatch: The patcher pytest provides for this test.
+        use_temp_database: The throwaway database file of this test.
 
     Returns:
         The directory the service now creates its courses in.
@@ -264,3 +276,49 @@ def test_the_new_course_looks_the_same_in_the_course_list(
         entry for entry in listed.json()["items"] if entry["slug"] == "test-course"
     )
     assert created.json()["course"] == item
+
+
+def test_the_creation_opens_a_run_that_can_be_read_back(courses_root: Path) -> None:
+    """The run id of the answer names a run that is really on the books.
+
+    The run id used to be a placeholder: it named a run that was never
+    written, so the workspace of a fresh course had nothing to show.  The
+    run of a new course is on the books from the first moment, and it can
+    be read back through the run API.
+
+    Args:
+        courses_root: The temporary courses root the fixture installed.
+
+    Returns:
+        Nothing. The test fails when the run cannot be read back, or when
+        it does not belong to the course that was just created.
+    """
+    with TestClient(app) as client:
+        created = client.post("/api/courses", json=VALID_BODY)
+        read = client.get(f"/api/runs/{created.json()['run_id']}")
+
+    assert read.status_code == 200
+    run = read.json()["run"]
+    assert run["course_slug"] == "test-course"
+    assert run["status"] == "QUEUED"
+    assert run["current_step"] == "intake"
+
+
+def test_the_run_of_a_new_course_is_in_the_run_list(courses_root: Path) -> None:
+    """A new course shows up in the list of the runs.
+
+    Args:
+        courses_root: The temporary courses root the fixture installed.
+
+    Returns:
+        Nothing. The test fails when the run of the new course is not in
+        the list of the runs of that course.
+    """
+    with TestClient(app) as client:
+        created = client.post("/api/courses", json=VALID_BODY)
+        listed = client.get("/api/runs", params={"course_slug": "test-course"})
+
+    assert listed.status_code == 200
+    assert [item["id"] for item in listed.json()["items"]] == [
+        created.json()["run_id"]
+    ]
