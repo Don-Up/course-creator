@@ -1161,26 +1161,87 @@ P1.2 冻结协议时故意**没有** import 那些输出类型（它们当时还
 **产出**：所有课程目录读写都有越界防护，JSON 写入是原子的。
 
 **文件**
+- Create: `apps/api/app/courses/__init__.py`（包标记，一行 docstring，同 `app/agents/__init__.py` 的写法）
 - Create: `apps/api/app/courses/common.py`
 - Create: `apps/api/tests/test_course_paths.py`
 
 **接口**
 - Consumes: P0.2
-- Produces: `_safe_course_root(slug: str, courses_root: Path) -> Path`；`_safe_child(root: Path, relative: str) -> Path`；`content_hash(text: str) -> str`（sha256）；`_write_json_atomic(path: Path, payload: dict) -> None`
+- Produces:
+  - `SLUG_PATTERN: re.Pattern[str]` —— `re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")`
+  - `_safe_course_root(slug: str, courses_root: Path) -> Path`
+  - `_safe_child(root: Path, relative: str) -> Path`
+  - `content_hash(text: str) -> str`（sha256 十六进制）
+  - `_write_json_atomic(path: Path, payload: dict[str, Any]) -> None`
+
+**写代码时的硬约定**
+- `common.py` 顶部写 `from __future__ import annotations`，并且**必须** `from typing import Any`——
+  `payload: dict[str, Any]` 用到了 `Any`。参考实现的 `courses/common.py` 漏了这个 import
+  （因为注解是字符串所以没炸，但任何求值注解的工具都会 `NameError`），**这是已知缺陷，不要照抄**。
+- `SLUG_PATTERN` 是 slug 校验的**唯一**正则来源。P1.5 的 `CourseCreate.slug` 必须用**同一个**模式串
+  `^[a-z0-9]+(?:-[a-z0-9]+)*$`，P1.5 的测试要断言两者**逐字相同**——两边漂移就会出现
+  「API 放行但护栏拒绝」或反过来的漏洞。
+- 单行不超过 92 字符（中文按 2 个字符宽计算）；`ruff check` 必须干净。
+- 新文件都要过 `npm run check:source-size`（单文件 500 行上限）。
 
 **步骤**
-- [ ] 写测试：`_safe_course_root("../etc", root)` → `ValueError("课程 slug 不合法")`
-- [ ] 写测试：`_safe_child(root, "../x")` → `ValueError("文件路径越界")`；`_safe_child(root, "a/../../b")` 同样被拒
-- [ ] 写测试：`_write_json_atomic` 写完后文件是完整 JSON；写到一半抛异常时原文件内容不变
+- [ ] 写测试：`_safe_course_root("../etc", root)` → `ValueError("课程 slug 不合法")`；`"a/b"` · `"A"` · `"a_b"` · `""` · `"a b"` 同样被拒；`"python-101"` 通过并返回 `root / "python-101"`
+- [ ] 写测试：`_safe_child(root, "../x")` → `ValueError("文件路径越界")`；`_safe_child(root, "a/../../b")` 同样被拒；`_safe_child(root, "..\\..\\b")`（Windows 反斜杠）同样被拒；`_safe_child(root, "/etc/passwd")`（绝对路径）同样被拒
+- [ ] 写测试：`_write_json_atomic` 写完后文件是**完整**的 JSON，且 `ensure_ascii=False`（中文原样落盘，不转义成 `\uXXXX`）
+- [ ] 写测试：`_write_json_atomic(path, payload)` 的中间文件叫 `path.with_suffix(path.suffix + ".tmp")`——`course.json` 对应 `course.json.tmp`（**不是** `course.tmp`）
+- [ ] 写测试：用 `monkeypatch.setattr("app.courses.common.os.replace", ...)` 让替换步骤抛 `OSError`；断言①原文件内容**不变** ②目录里**不留下**任何 `.tmp` 残留
+- [ ] 写测试：`content_hash("")` == `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`；同文本同哈希，不同文本不同哈希
 - [ ] 跑测试 → FAIL
 - [ ] 实现 `common.py`
 - [ ] 再跑 → PASS
-- [ ] 提交：`git commit -m "feat: 建立课程路径护栏"`
+- [ ] 写一份改动说明（改了哪些文件、跑了哪些命令、结果如何）；**不要** `git add` / `git commit` / `git push`——提交由开发者自己做
 
 **验收**
 ```bash
+# Linux / macOS
 apps/api/.venv/bin/python -m pytest apps/api/tests/test_course_paths.py -v
+# Windows
+apps\api\.venv\Scripts\python.exe -m pytest apps/api/tests/test_course_paths.py -v
+npm run check:source-size
 ```
+
+<details><summary>P1.4.1 · 四条护栏的判定规则（实现照此写，不要自行发挥）</summary>
+
+**`_safe_course_root(slug, courses_root)`**
+
+1. `SLUG_PATTERN.fullmatch(slug)` 不匹配 → `ValueError("课程 slug 不合法")`
+   （**必须用 `fullmatch` 不能用 `match`**：Python 的 `$` 也会匹配「末尾换行符之前」，
+   `match` 会放行 `"python-101\n"`，而 P1.5 的 Pydantic `pattern` 走 Rust regex 更严格、
+   会先拒掉——同一个模式串两边口径必须一致，`SLUG_PATTERN` 才算数「唯一来源」）
+2. 匹配则返回 `courses_root / slug`；返回前再用「结果仍在 `courses_root` 之内」复核一次，
+   不通过也抛 `ValueError("课程 slug 不合法")`（双保险，slug 以后若被放宽也不会漏出目录）
+3. `courses_root` 由调用方**显式传入**，不读 `Settings` 单例——这样护栏不用 monkeypatch 就能测
+
+**`_safe_child(root, relative)`**
+
+1. 先把 `relative` 里的 `\` 统一换成 `/`（Windows 上 `..\..\b` 同样是越界）
+2. `relative` 是绝对路径（含 `C:\...`、`\\server\share`）→ `ValueError("文件路径越界")`
+3. 拼出 `candidate = root / relative` 并 `resolve()`；若 `candidate` 不在 `root.resolve()` 之内
+   → `ValueError("文件路径越界")`
+4. 通过则返回 `candidate`
+
+**`_write_json_atomic(path, payload)`**
+
+1. **不**创建父目录——父目录必须已经存在，缺失时抛 `FileNotFoundError`（路径写错要立刻暴露，
+   不能被悄悄 `mkdir` 掩盖）
+2. 序列化用 `json.dumps(payload, ensure_ascii=False, indent=2)`，末尾补一个换行
+3. 先写 `tmp = path.with_suffix(path.suffix + ".tmp")`（`course.json` → `course.json.tmp`），
+   编码 `utf-8`
+4. 再用 `os.replace(tmp, path)` 原子替换——**必须**用模块级的 `import os` 写 `os.replace`，
+   测试要靠 `monkeypatch.setattr("app.courses.common.os.replace", ...)` 才能注入失败
+5. 任何异常都要在抛出前删掉 `tmp`（`tmp.unlink(missing_ok=True)`），保证目录里不留 `.tmp`；
+   原文件因为还没被替换而**保持原样**
+
+**`content_hash(text)`**
+
+- `hashlib.sha256(text.encode("utf-8")).hexdigest()`，返回 64 位小写十六进制
+
+</details>
 
 #### P1.5 · 实现课程脚手架创建
 
