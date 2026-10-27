@@ -9,7 +9,7 @@ FastAPI 的最小运行链路，供学员按 `implementation-guide-20-lessons/` 
 ## 目录职责
 
 - `apps/web/`：React + TypeScript 前端。前端只通过 REST API 读取后端数据。
-- `apps/api/`：FastAPI 后端。当前仅暴露健康检查、课程列表与单门课详情。
+- `apps/api/`：FastAPI 后端。当前仅暴露健康检查、课程列表、单门课详情与建课接口。
 - `courses/`：课程根目录。课程列表的事实源是 `courses/*/course.json`（扫描得出）；
   `courses/catalog.json` 只是发布索引，API 不读它。
 - `.agents/skills/`：版本化的领域与工程规则，必须整体保留。

@@ -7,8 +7,9 @@ impossible value before it reaches a stage output.
 
 The thirteen models P1.3 needs live here, plus the `CourseCreate` that
 P1.5 added for the intake form: it is the one request model of this
-module.  P1.6 adds the two response models of the course list.  The
-workspace schemas arrive with P3.8.
+module.  P1.6 adds the two response models of the course list, and P1.7
+adds the answer of the creation API.  The workspace schemas arrive with
+P3.8.
 """
 
 from __future__ import annotations
@@ -178,3 +179,18 @@ class CourseList(BaseModel):
     """The answer of `GET /api/courses`."""
 
     items: list[CourseSummary]
+
+
+class CourseCreated(BaseModel):
+    """The answer of `POST /api/courses`.
+
+    The course is the item the course list shows, so the frontend has one
+    shape for a course wherever it comes from.  The run id names the intake
+    run of this creation; until the run tables arrive with P2.1 it is an id
+    without a record behind it.  The status is the status of the new
+    course, which is "preparing" because it has no chapters yet.
+    """
+
+    course: CourseSummary
+    run_id: str
+    status: str

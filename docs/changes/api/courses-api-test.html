@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Course Studio · /api/courses 接口测试台</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
+<style>
+  [x-cloak] { display: none !important; }
+  pre.json {
+    max-height: 22rem;
+    overflow: auto;
+    font-size: 12px;
+    line-height: 1.55;
+    tab-size: 2;
+  }
+  .hint { font-size: 11px; opacity: 0.65; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  table.json-table td, table.json-table th { vertical-align: top; }
+</style>
+</head>
+<body class="bg-base-200 min-h-screen">
+
+<div id="cdn-warning"
+     class="alert alert-warning hidden fixed top-2 left-2 right-2 z-50 max-w-3xl mx-auto shadow-lg">
+  <span>
+    <b>CDN 没加载成功。</b>本页依赖 Tailwind + DaisyUI + Alpine.js 三个 CDN。
+    若是内网/离线环境，请确认能访问 cdn.tailwindcss.com 与 cdn.jsdelivr.net。
+  </span>
+</div>
+
+<div x-data="apiLab" x-cloak>
+
+<header class="navbar bg-base-100 shadow-sm sticky top-0 z-20 px-4 gap-3">
+  <div class="flex-1 min-w-0">
+    <div class="text-sm font-bold leading-tight">AI Course Studio · <span class="mono">/api/courses</span> 接口测试台</div>
+    <div class="hint leading-tight">P1.7 建课接口 · 后端 FastAPI @ 127.0.0.1:8000</div>
+  </div>
+  <div class="flex-none">
+    <label class="input input-sm input-bordered flex items-center gap-2 w-72">
+      <span class="hint shrink-0">地址</span>
+      <input type="text" class="grow mono" x-model="baseUrl" @change="saveBaseUrl()" spellcheck="false" />
+    </label>
+  </div>
+  <div class="flex-none flex gap-2">
+    <button type="button" class="btn btn-sm btn-ghost" @click="toggleTheme()" :title="theme === 'dark' ? '切到亮色' : '切到暗色'">
+      <span x-text="theme === 'dark' ? '☀' : '☾'"></span>
+    </button>
+    <button type="button" class="btn btn-sm btn-error btn-outline" @click="clearLogs()">清空日志</button>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4 space-y-4">
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <h2 class="card-title text-base">先看这个：CORS 决定了页面能不能连上后端</h2>
+      <div class="text-sm space-y-2">
+        <p>
+          后端 <span class="mono">app/main.py</span> 只放行两个来源：
+          <span class="mono">http://localhost:5173</span> 和 <span class="mono">http://127.0.0.1:5173</span>。
+          <b>直接双击打开本文件（<span class="mono">file://</span>）会被浏览器拦掉</b>，页面上只会看到
+          <span class="mono">Failed to fetch</span>。
+        </p>
+        <p class="font-semibold">推荐做法（二选一，都不用改后端代码）：</p>
+        <div class="mockup-code text-xs overflow-x-auto">
+          <pre data-prefix="1"># 方式 A：用 5173 起一个静态服务器（这个端口在后端白名单里）
+cd docs/changes/api
+python -m http.server 5173
+# 然后浏览器打开 http://localhost:5173/courses-api-test.html</pre>
+        </div>
+        <div class="mockup-code text-xs overflow-x-auto">
+          <pre data-prefix="2"># 方式 B：把页面丢进 Vite 的 public 目录，让前端 dev server 代发
+copy docs/changes/api/courses-api-test.html apps/web/public/
+npm --prefix apps/web run dev
+# 然后浏览器打开 http://localhost:5173/courses-api-test.html</pre>
+        </div>
+        <p class="hint">
+          后端起法：<span class="mono">cd apps/api</span> →
+          <span class="mono">.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <h2 class="card-title text-base">接口速查</h2>
+      <div class="overflow-x-auto">
+        <table class="table table-sm table-zebra">
+          <thead><tr><th>方法</th><th>路径</th><th>成功</th><th>失败</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-info badge-sm mono">GET</span></td>
+              <td class="mono">/api/health</td><td class="mono">200</td><td class="mono">—</td>
+              <td>健康检查</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-info badge-sm mono">GET</span></td>
+              <td class="mono">/api/courses</td><td class="mono">200</td><td class="mono">—</td>
+              <td>课程列表，<span class="mono">{ items: CourseSummary[] }</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-info badge-sm mono">GET</span></td>
+              <td class="mono">/api/courses/{slug}</td><td class="mono">200</td>
+              <td class="mono">400</td><td class="mono">404</td>
+              <td>单门课详情</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-success badge-sm mono">POST</span></td>
+              <td class="mono">/api/courses</td><td class="mono">201</td>
+              <td class="mono">400</td><td class="mono">409</td><td class="mono">422</td>
+              <td>建课，<span class="mono">{ course, run_id, status }</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <h2 class="card-title text-base"><span class="badge badge-info badge-sm mono">GET</span> /api/health</h2>
+        <button type="button" class="btn btn-sm btn-primary" @click="loadHealth()" :disabled="busy">发送请求</button>
+        <span class="hint">只回 <span class="mono">{ status: "ok", service: "course-training-scaffold" }</span></span>
+      </div>
+      <template x-if="health">
+        <div class="alert alert-success py-2 mt-3">
+          <span class="mono text-sm" x-text="pretty(health)"></span>
+        </div>
+      </template>
+      <template x-if="healthError">
+        <div class="alert alert-error py-2 mt-3">
+          <span class="text-sm" x-text="healthError"></span>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="card-title text-base"><span class="badge badge-info badge-sm mono">GET</span> /api/courses</h2>
+          <button type="button" class="btn btn-sm btn-primary" @click="loadList()" :disabled="busy">拉课程列表</button>
+        </div>
+        <template x-if="listError">
+          <div class="alert alert-error py-2 mt-3">
+            <span class="text-sm" x-text="listError"></span>
+          </div>
+        </template>
+        <template x-if="list">
+          <div class="mt-3 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="badge badge-neutral badge-sm" x-text="`共 ${list.items.length} 门课`"></span>
+              <button type="button" class="btn btn-xs btn-ghost" @click="copy(pretty(list))">复制 JSON</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="table table-xs table-zebra">
+                <thead><tr><th>slug</th><th>title</th><th>chapters</th><th>status</th><th>duration</th><th></th></tr></thead>
+                <tbody>
+                  <template x-for="item in list.items" :key="item.slug">
+                    <tr>
+                      <td class="mono" x-text="item.slug"></td>
+                      <td x-text="item.title"></td>
+                      <td class="mono" x-text="item.chapters"></td>
+                      <td><span class="badge badge-xs" :class="statusBadge(item.status)" x-text="item.status"></span></td>
+                      <td x-text="item.duration"></td>
+                      <td><button type="button" class="btn btn-xs btn-outline" @click="slugInput = item.slug; loadOne()">看详情</button></td>
+                    </tr>
+                  </template>
+                  <template x-if="list.items.length === 0">
+                    <tr><td colspan="6" class="text-center hint">courses/ 目录里还没有课程</td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="card-title text-base"><span class="badge badge-info badge-sm mono">GET</span> /api/courses/{slug}</h2>
+        </div>
+        <div class="join w-full mt-2">
+          <input class="input input-bordered input-sm join-item flex-1 mono" x-model="slugInput"
+                 placeholder="课程 slug" @keydown.enter="loadOne()" spellcheck="false" />
+          <button type="button" class="btn btn-sm btn-primary join-item" @click="loadOne()" :disabled="busy">查</button>
+        </div>
+        <p class="hint mt-1">
+          slug 不合法 → <span class="mono">400</span>（路径护栏）；slug 合法但没有这门课 → <span class="mono">404</span>。
+          试试把 slug 改成 <span class="mono">Test-Course</span>（大写）或 <span class="mono">../secrets</span>。
+        </p>
+        <template x-if="oneError">
+          <div class="alert alert-error py-2 mt-3">
+            <span class="text-sm" x-text="oneError"></span>
+          </div>
+        </template>
+        <template x-if="one">
+          <div class="mt-3 mockup-code text-xs overflow-x-auto">
+            <pre x-text="pretty(one)"></pre>
+          </div>
+        </template>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <h2 class="card-title text-base"><span class="badge badge-success badge-sm mono">POST</span> /api/courses</h2>
+
+      <div class="flex flex-wrap gap-2 my-2">
+        <span class="hint self-center">一键填样例：</span>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('valid')">合法样例</button>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('upperSlug')">slug 大写 → 422</button>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('pathSlug')">slug 越界 → 422</button>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('shortTitle')">标题过短 → 422</button>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('shortGoals')">目标过短 → 422</button>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('zeroChapters')">章节数 0 → 422</button>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('tooManyChapters')">章节数 61 → 422</button>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('badCharMin')">生效字数 999 → 422</button>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('badBudget')">预算 0 → 422</button>
+        <button type="button" class="btn btn-xs btn-outline" @click="scenario('typeError')">章节数填 abc → 422</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label class="form-control">
+          <div class="label py-1"><span class="label-text mono">title</span>
+            <span class="label-text-alt hint">长度 2–120</span></div>
+          <input class="input input-bordered input-sm" x-model="form.title" />
+        </label>
+        <label class="form-control">
+          <div class="label py-1"><span class="label-text mono">slug</span>
+            <span class="label-text-alt hint mono">^[a-z0-9]+(-[a-z0-9]+)*$</span></div>
+          <input class="input input-bordered input-sm mono" x-model="form.slug" spellcheck="false" />
+        </label>
+        <label class="form-control md:col-span-2">
+          <div class="label py-1"><span class="label-text mono">audience</span>
+            <span class="label-text-alt hint">长度 2–500</span></div>
+          <input class="input input-bordered input-sm" x-model="form.audience" />
+        </label>
+        <label class="form-control md:col-span-2">
+          <div class="label py-1"><span class="label-text mono">goals</span>
+            <span class="label-text-alt hint">长度 5–3000</span></div>
+          <textarea class="textarea textarea-bordered textarea-sm" rows="2" x-model="form.goals"></textarea>
+        </label>
+        <label class="form-control md:col-span-2">
+          <div class="label py-1"><span class="label-text mono">scope</span>
+            <span class="label-text-alt hint">长度 2–3000</span></div>
+          <textarea class="textarea textarea-bordered textarea-sm" rows="2" x-model="form.scope"></textarea>
+        </label>
+        <label class="form-control">
+          <div class="label py-1"><span class="label-text mono">source_policy</span></div>
+          <input class="input input-bordered input-sm" x-model="form.source_policy" />
+        </label>
+        <label class="form-control">
+          <div class="label py-1"><span class="label-text mono">delivery</span></div>
+          <input class="input input-bordered input-sm" x-model="form.delivery" />
+        </label>
+        <label class="form-control">
+          <div class="label py-1"><span class="label-text mono">preferred_chapter_count</span>
+            <span class="label-text-alt hint">1–60</span></div>
+          <input class="input input-bordered input-sm mono" x-model="form.preferred_chapter_count" inputmode="numeric" spellcheck="false" />
+        </label>
+        <label class="form-control">
+          <div class="label py-1"><span class="label-text mono">effective_char_min</span>
+            <span class="label-text-alt hint">1000–50000</span></div>
+          <input class="input input-bordered input-sm mono" x-model="form.effective_char_min" inputmode="numeric" spellcheck="false" />
+        </label>
+        <label class="form-control">
+          <div class="label py-1"><span class="label-text mono">token_budget_mtokens</span>
+            <span class="label-text-alt hint">0.01–10000，留空即 null</span></div>
+          <input class="input input-bordered input-sm mono" x-model="form.token_budget_mtokens" inputmode="decimal" spellcheck="false" />
+        </label>
+        <label class="form-control">
+          <div class="label py-1"><span class="label-text mono">provider</span></div>
+          <input class="input input-bordered input-sm mono" x-model="form.provider" spellcheck="false" />
+        </label>
+        <label class="form-control md:col-span-2">
+          <div class="label py-1"><span class="label-text mono">model</span></div>
+          <input class="input input-bordered input-sm mono" x-model="form.model" spellcheck="false" />
+        </label>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 mt-3">
+        <button type="button" class="btn btn-sm btn-primary" @click="createCourse()" :disabled="busy">提交建课</button>
+        <button type="button" class="btn btn-sm btn-outline" @click="createCourse()" :disabled="busy">再提交一次（测 409）</button>
+        <button type="button" class="btn btn-sm btn-ghost" @click="copy(pretty(payload()))">复制请求体</button>
+        <span class="hint">同一个 slug 连点两次 → 第二次是 <span class="mono">409</span>，老课一个字节不动</span>
+      </div>
+
+      <template x-if="createError">
+        <div class="alert alert-error py-2 mt-3 flex-col items-start gap-2">
+          <span class="text-sm font-semibold" x-text="createError"></span>
+          <template x-if="validationRows(createErrorData).length">
+            <div class="overflow-x-auto w-full">
+              <table class="table table-xs json-table">
+                <thead><tr><th>字段</th><th>说明</th><th>类型</th><th>收到的值</th></tr></thead>
+                <tbody>
+                  <template x-for="row in validationRows(createErrorData)" :key="row.field + row.msg">
+                    <tr>
+                      <td class="mono" x-text="row.field"></td>
+                      <td x-text="row.msg"></td>
+                      <td class="mono hint" x-text="row.type"></td>
+                      <td class="mono" x-text="row.input"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <template x-if="created">
+        <div class="mt-3 space-y-2">
+          <div class="alert alert-success py-3 flex-col items-start gap-1">
+            <div class="flex items-center gap-2">
+              <span class="badge badge-success mono">201</span>
+              <span class="text-sm font-semibold">建课成功，课程已落到磁盘上</span>
+            </div>
+            <div class="text-xs mono">
+              <div>slug：<span x-text="created.course.slug"></span></div>
+              <div>title：<span x-text="created.course.title"></span></div>
+              <div>chapters：<span x-text="created.course.chapters"></span> · status：<span x-text="created.status"></span></div>
+              <div>duration：<span x-text="created.course.duration"></span></div>
+              <div>run_id：<span x-text="created.run_id"></span></div>
+            </div>
+            <div class="hint">run_id 现在只是随机编号，还没有落库的 run 记录（那是 P2.1 的活儿）</div>
+          </div>
+          <div class="mockup-code text-xs overflow-x-auto">
+            <pre x-text="pretty(created)"></pre>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <h2 class="card-title text-base">最近一次响应</h2>
+      <template x-if="!last">
+        <div class="hint">还没有发过请求</div>
+      </template>
+      <template x-if="last">
+        <div class="space-y-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="badge mono" :class="statusBadge(last.status)">
+              <span x-text="last.status === 0 ? 'ERR' : last.status"></span>
+            </span>
+            <span class="badge badge-ghost mono" x-text="last.method"></span>
+            <span class="mono text-sm break-all" x-text="last.path"></span>
+            <span class="hint" x-text="`${last.ms} ms`"></span>
+            <button type="button" class="btn btn-xs btn-ghost" @click="copy(last.curl)">复制 curl</button>
+          </div>
+          <template x-if="last.error">
+            <div class="alert alert-error py-2">
+              <div class="text-sm">
+                <div class="font-semibold">请求没发出去</div>
+                <div class="mono break-all" x-text="last.error"></div>
+                <div class="hint mt-1">
+                  浏览器只说 “Failed to fetch”，最常见的原因就是 CORS。确认后端在跑，而且本页是从
+                  <span class="mono">http://localhost:5173</span> 打开的（见页面顶部说明）。
+                </div>
+              </div>
+            </div>
+          </template>
+          <pre class="json bg-base-200 rounded-box p-3" x-html="highlight(pretty(last.data))"></pre>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <h2 class="card-title text-base">请求日志 <span class="hint font-normal" x-text="`(${logs.length})`"></span></h2>
+      <div class="overflow-x-auto">
+        <table class="table table-xs table-zebra">
+          <thead>
+            <tr><th>#</th><th>方法</th><th>路径</th><th>状态</th><th>耗时</th><th>响应</th></tr>
+          </thead>
+          <tbody>
+            <template x-for="entry in logs" :key="entry.id">
+              <tr>
+                <td class="mono hint" x-text="entry.id"></td>
+                <td><span class="badge badge-ghost badge-xs mono" x-text="entry.method"></span></td>
+                <td class="mono break-all" x-text="entry.path"></td>
+                <td><span class="badge badge-xs mono" :class="statusBadge(entry.status)"
+                          x-text="entry.status === 0 ? 'ERR' : entry.status"></span></td>
+                <td class="mono hint" x-text="`${entry.ms} ms`"></td>
+                <td>
+                  <details>
+                    <summary class="cursor-pointer text-xs">查看</summary>
+                    <pre class="json bg-base-200 rounded-box p-2 mt-1" x-html="highlight(pretty(entry.data))"></pre>
+                  </details>
+                </td>
+              </tr>
+            </template>
+            <template x-if="logs.length === 0">
+              <tr><td colspan="6" class="text-center hint">还没有请求</td></tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="text-center hint py-4">
+    docs/changes/api/courses-api-test.html · 对应 P1.7「暴露 POST /api/courses」
+  </footer>
+</main>
+
+<div x-show="toast" x-cloak class="toast toast-bottom toast-center z-50">
+  <div class="alert alert-success py-2"><span class="text-sm" x-text="toast"></span></div>
+</div>
+
+</div>
+
+<script>
+  const FORM_DEFAULTS = {
+    title: "测试课程",
+    slug: "test-course",
+    audience: "有 Python 基础的学习者",
+    goals: "学会用 Agent 把一门课从零做出来",
+    scope: "从 intake 走到 release",
+    source_policy: "允许使用用户资料与公开官方资料",
+    delivery: "Markdown + HTML",
+    preferred_chapter_count: "2",
+    effective_char_min: "12000",
+    token_budget_mtokens: "",
+    provider: "codex_gateway",
+    model: "llm-gateway--kimi-k3",
+  };
+
+  const SCENARIOS = {
+    valid: {},
+    upperSlug: { slug: "Test-Course" },
+    pathSlug: { slug: "../secrets" },
+    shortTitle: { title: "课" },
+    shortGoals: { goals: "学" },
+    zeroChapters: { preferred_chapter_count: "0" },
+    tooManyChapters: { preferred_chapter_count: "61" },
+    badCharMin: { effective_char_min: "999" },
+    badBudget: { token_budget_mtokens: "0" },
+    typeError: { preferred_chapter_count: "abc" },
+  };
+
+  function apiLab() {
+    return {
+      baseUrl: localStorage.getItem("api-lab.base") || "http://127.0.0.1:8000",
+      theme: localStorage.getItem("api-lab.theme") || "light",
+      busy: false,
+      seq: 0,
+      logs: [],
+      last: null,
+      toast: "",
+      toastTimer: null,
+      health: null,
+      healthError: "",
+      list: null,
+      listError: "",
+      one: null,
+      oneError: "",
+      created: null,
+      createError: "",
+      createErrorData: null,
+      slugInput: "test-course",
+      form: Object.assign({}, FORM_DEFAULTS),
+
+      init() {
+        document.documentElement.setAttribute("data-theme", this.theme);
+      },
+
+      saveBaseUrl() {
+        localStorage.setItem("api-lab.base", this.baseUrl);
+      },
+
+      toggleTheme() {
+        this.theme = this.theme === "dark" ? "light" : "dark";
+        localStorage.setItem("api-lab.theme", this.theme);
+        document.documentElement.setAttribute("data-theme", this.theme);
+      },
+
+      clearLogs() {
+        this.logs = [];
+      },
+
+      statusBadge(status) {
+        if (status === 0) return "badge-error";
+        if (status === 200 || status === 201) return "badge-success";
+        if (status === 409 || status === 422) return "badge-warning";
+        if (status >= 400) return "badge-error";
+        return "badge-ghost";
+      },
+
+      pretty(value) {
+        if (value === null || value === undefined) return "";
+        if (typeof value === "string") return value;
+        return JSON.stringify(value, null, 2);
+      },
+
+      highlight(value) {
+        const escaped = this.pretty(value).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+        return escaped.replace(
+          /("(?:\\u[a-f0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+          (m) => {
+            if (m.startsWith('"')) {
+              return m.endsWith(":")
+                ? `<span class="text-amber-300">${m}</span>`
+                : `<span class="text-emerald-300">${m}</span>`;
+            }
+            if (m === "true" || m === "false") return `<span class="text-violet-300">${m}</span>`;
+            if (m === "null") return `<span class="text-slate-400">${m}</span>`;
+            return `<span class="text-sky-300">${m}</span>`;
+          }
+        );
+      },
+
+      validationRows(data) {
+        if (!data || !Array.isArray(data.detail)) return [];
+        return data.detail.map((item) => ({
+          field: Array.isArray(item.loc) ? item.loc.filter((x) => x !== "body").join(".") : String(item.loc),
+          msg: item.msg || "",
+          type: item.type || "",
+          input: typeof item.input === "string" ? item.input : this.pretty(item.input),
+        }));
+      },
+
+      num(value, allowNull) {
+        const raw = String(value === null || value === undefined ? "" : value).trim();
+        if (raw === "") return allowNull ? null : "";
+        const parsed = Number(raw);
+        return Number.isNaN(parsed) ? raw : parsed;
+      },
+
+      payload() {
+        const f = this.form;
+        return {
+          title: f.title,
+          slug: f.slug,
+          audience: f.audience,
+          goals: f.goals,
+          scope: f.scope,
+          source_policy: f.source_policy,
+          delivery: f.delivery,
+          preferred_chapter_count: this.num(f.preferred_chapter_count, false),
+          effective_char_min: this.num(f.effective_char_min, false),
+          token_budget_mtokens: this.num(f.token_budget_mtokens, true),
+          provider: f.provider,
+          model: f.model,
+        };
+      },
+
+      scenario(name) {
+        const patch = SCENARIOS[name];
+        if (!patch) return;
+        this.form = Object.assign({}, FORM_DEFAULTS, patch);
+      },
+
+      curlFor(method, url, body) {
+        const parts = ["curl -i -X " + method + " '" + url + "'"];
+        if (body !== undefined) {
+          parts.push("-H 'Content-Type: application/json'");
+          const raw = JSON.stringify(body).replace(/'/g, "'\\''");
+          parts.push("--data-raw '" + raw + "'");
+        }
+        return parts.join(" \\\n  ");
+      },
+
+      async request(method, path, body) {
+        const base = this.baseUrl.trim().replace(/\/+$/, "");
+        const url = base + path;
+        const started = performance.now();
+        const init = { method, headers: { Accept: "application/json" } };
+        if (body !== undefined) {
+          init.headers["Content-Type"] = "application/json";
+          init.body = JSON.stringify(body);
+        }
+        this.busy = true;
+        try {
+          const response = await fetch(url, init);
+          const text = await response.text();
+          const ms = Math.round(performance.now() - started);
+          let data = null;
+          if (text) {
+            try {
+              data = JSON.parse(text);
+            } catch (e) {
+              data = text;
+            }
+          }
+          this.pushLog({
+            method: method,
+            path: path,
+            status: response.status,
+            ms: ms,
+            data: data,
+            error: "",
+            curl: this.curlFor(method, url, body),
+          });
+          return { ok: response.ok, status: response.status, data: data, error: "" };
+        } catch (error) {
+          const ms = Math.round(performance.now() - started);
+          this.pushLog({
+            method: method,
+            path: path,
+            status: 0,
+            ms: ms,
+            data: null,
+            error: String(error),
+            curl: this.curlFor(method, url, body),
+          });
+          return { ok: false, status: 0, data: null, error: String(error) };
+        } finally {
+          this.busy = false;
+        }
+      },
+
+      pushLog(entry) {
+        this.seq += 1;
+        this.logs.unshift(Object.assign({ id: this.seq }, entry));
+        this.last = entry;
+      },
+
+      describeFailure(result) {
+        if (result.status === 0) return "请求失败：" + result.error;
+        const detail = result.data && result.data.detail;
+        if (typeof detail === "string") return "HTTP " + result.status + " · " + detail;
+        return "HTTP " + result.status;
+      },
+
+      async loadHealth() {
+        this.health = null;
+        this.healthError = "";
+        const result = await this.request("GET", "/api/health");
+        if (result.ok) {
+          this.health = result.data;
+        } else {
+          this.healthError = this.describeFailure(result);
+        }
+      },
+
+      async loadList() {
+        this.list = null;
+        this.listError = "";
+        const result = await this.request("GET", "/api/courses");
+        if (result.ok) {
+          this.list = result.data;
+        } else {
+          this.listError = this.describeFailure(result);
+        }
+      },
+
+      async loadOne() {
+        this.one = null;
+        this.oneError = "";
+        const slug = this.slugInput.trim();
+        if (!slug) return;
+        const result = await this.request("GET", "/api/courses/" + encodeURIComponent(slug));
+        if (result.ok) {
+          this.one = result.data;
+        } else {
+          this.oneError = this.describeFailure(result);
+        }
+      },
+
+      async createCourse() {
+        this.created = null;
+        this.createError = "";
+        this.createErrorData = null;
+        const result = await this.request("POST", "/api/courses", this.payload());
+        if (result.ok) {
+          this.created = result.data;
+        } else {
+          this.createError = this.describeFailure(result);
+          this.createErrorData = result.data;
+        }
+      },
+
+      async copy(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          this.flash("已复制到剪贴板");
+        } catch (e) {
+          const area = document.createElement("textarea");
+          area.value = text;
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          document.body.appendChild(area);
+          area.select();
+          try {
+            document.execCommand("copy");
+            this.flash("已复制到剪贴板");
+          } catch (err) {
+            this.flash("复制失败，请手动选中复制");
+          }
+          document.body.removeChild(area);
+        }
+      },
+
+      flash(message) {
+        this.toast = message;
+        if (this.toastTimer) clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => {
+          this.toast = "";
+        }, 1800);
+      },
+    };
+  }
+
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("apiLab", apiLab);
+  });
+</script>
+
+<script>
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      if (!window.Alpine) {
+        document.getElementById("cdn-warning").classList.remove("hidden");
+      }
+    }, 1500);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-Hans" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>课程 API 测试页</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.4.2/dist/cdn.min.js"></script>
+    <style>
+      body {
+        background: linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%);
+      }
+    </style>
+  </head>
+  <body>
+    <div x-data="apiTester()" class="min-h-screen p-6 text-slate-700">
+      <div class="mx-auto max-w-6xl">
+        <div class="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium uppercase tracking-[0.2em] text-sky-600">API Tools</p>
+            <h1 class="text-3xl font-bold text-slate-900">/api/courses 测试页</h1>
+          </div>
+          <div class="badge badge-primary badge-lg">Tailwind + DaisyUI + Alpine</div>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <section class="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
+            <div class="mb-4 flex items-end gap-3">
+              <label class="form-control flex-1">
+                <span class="label-text mb-2 font-medium">Base URL</span>
+                <input x-model="baseUrl" class="input input-bordered w-full" placeholder="http://localhost:8000" />
+              </label>
+              <button @click="pingServer()" class="btn btn-outline btn-primary" x-bind:disabled="loading">
+                <span x-show="!loading">检测连接</span>
+                <span x-show="loading" class="loading loading-spinner loading-sm"></span>
+              </button>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="rounded-xl bg-slate-50 p-4">
+                <div class="mb-3 flex items-center justify-between">
+                  <h2 class="text-lg font-semibold">列表全部课程</h2>
+                  <button @click="listCourses()" class="btn btn-sm btn-primary" x-bind:disabled="loading">
+                    GET /api/courses
+                  </button>
+                </div>
+                <div class="text-sm text-slate-500">读取所有课程，返回 items 数组</div>
+              </div>
+
+              <div class="rounded-xl bg-slate-50 p-4">
+                <div class="mb-3 flex items-center justify-between">
+                  <h2 class="text-lg font-semibold">读取单门课</h2>
+                  <button @click="getCourse()" class="btn btn-sm btn-secondary" x-bind:disabled="loading || !slugInput">
+                    GET /api/courses/{slug}
+                  </button>
+                </div>
+                <input x-model="slugInput" class="input input-bordered input-sm w-full" placeholder="例如: test-course" />
+              </div>
+            </div>
+
+            <div class="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-4">
+              <div class="mb-3 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-sky-900">创建课程</h2>
+                <button @click="createCourse()" class="btn btn-sm btn-success" x-bind:disabled="loading">
+                  POST /api/courses
+                </button>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="form-control">
+                  <span class="label-text mb-2">title</span>
+                  <input x-model="form.title" class="input input-bordered" placeholder="例如：测试课程" />
+                </label>
+                <label class="form-control">
+                  <span class="label-text mb-2">slug</span>
+                  <input x-model="form.slug" class="input input-bordered" placeholder="例如：test-course" />
+                </label>
+                <label class="form-control md:col-span-2">
+                  <span class="label-text mb-2">audience</span>
+                  <input x-model="form.audience" class="input input-bordered" placeholder="面向谁学习" />
+                </label>
+                <label class="form-control md:col-span-2">
+                  <span class="label-text mb-2">goals</span>
+                  <textarea x-model="form.goals" class="textarea textarea-bordered h-24" placeholder="课程目标"></textarea>
+                </label>
+                <label class="form-control md:col-span-2">
+                  <span class="label-text mb-2">scope</span>
+                  <textarea x-model="form.scope" class="textarea textarea-bordered h-20" placeholder="课程范围"></textarea>
+                </label>
+                <label class="form-control">
+                  <span class="label-text mb-2">preferred_chapter_count</span>
+                  <input x-model.number="form.preferred_chapter_count" type="number" min="1" max="60" class="input input-bordered" />
+                </label>
+                <label class="form-control">
+                  <span class="label-text mb-2">effective_char_min</span>
+                  <input x-model.number="form.effective_char_min" type="number" min="1000" max="50000" class="input input-bordered" />
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <aside class="space-y-6">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 class="mb-4 text-lg font-semibold">状态</h2>
+              <div class="flex items-center gap-2">
+                <span class="status" x-bind:class="loading ? 'status-info animate-pulse' : 'status-success'"></span>
+                <span x-text="loading ? '请求中...' : '空闲'" class="text-sm font-medium"></span>
+              </div>
+              <div class="mt-4 text-sm text-slate-600" x-text="statusText"></div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 class="mb-4 text-lg font-semibold">错误信息</h2>
+              <div x-show="error" class="alert alert-error shadow-sm">
+                <span x-text="error"></span>
+              </div>
+              <div x-show="!error" class="text-sm text-slate-500">暂无错误</div>
+            </div>
+          </aside>
+        </div>
+
+        <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="text-xl font-bold">响应结果</h2>
+            <button @click="copyResult()" class="btn btn-sm btn-ghost" x-bind:disabled="!result">
+              复制 JSON
+            </button>
+          </div>
+
+          <pre class="max-h-[520px] overflow-auto rounded-xl bg-slate-950 p-4 text-sm text-slate-100" x-text="formattedResult"></pre>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      function apiTester() {
+        return {
+          baseUrl: window.location.origin || 'http://localhost:8000',
+          slugInput: '',
+          loading: false,
+          statusText: '未请求',
+          error: '',
+          result: null,
+          form: {
+            title: '测试课程',
+            slug: 'test-course',
+            audience: '初学者',
+            goals: '学会如何用 API 创建课程，并理解教学结构。',
+            scope: '基础入门与目录生成',
+            preferred_chapter_count: 12,
+            effective_char_min: 12000,
+          },
+          get formattedResult() {
+            if (!this.result) return '暂无响应';
+            return JSON.stringify(this.result, null, 2);
+          },
+          async requestJson(url, options = {}) {
+            const res = await fetch(url, {
+              headers: { 'Content-Type': 'application/json' },
+              ...options,
+            });
+
+            const text = await res.text();
+            let data = null;
+            if (text) {
+              try {
+                data = JSON.parse(text);
+              } catch {
+                data = text;
+              }
+            }
+
+            if (!res.ok) {
+              throw new Error(
+                typeof data === 'object' && data && data.detail
+                  ? JSON.stringify(data.detail)
+                  : `HTTP ${res.status}`
+              );
+            }
+
+            return data;
+          },
+          async pingServer() {
+            this.loading = true;
+            this.error = '';
+            this.statusText = '检测服务状态...';
+            try {
+              const target = `${this.baseUrl.replace(/\/$/, '')}/api/health`;
+              const data = await this.requestJson(target, { method: 'GET' });
+              this.result = data;
+              this.statusText = '服务可访问';
+            } catch (err) {
+              this.error = `无法连接到后端：${err.message}`;
+              this.statusText = '连接失败';
+            } finally {
+              this.loading = false;
+            }
+          },
+          async listCourses() {
+            this.loading = true;
+            this.error = '';
+            this.statusText = '正在请求 GET /api/courses...';
+            try {
+              const url = `${this.baseUrl.replace(/\/$/, '')}/api/courses`;
+              this.result = await this.requestJson(url, { method: 'GET' });
+              this.statusText = '课程列表请求成功';
+            } catch (err) {
+              this.error = err.message;
+              this.statusText = '列表请求失败';
+            } finally {
+              this.loading = false;
+            }
+          },
+          async getCourse() {
+            if (!this.slugInput.trim()) {
+              this.error = '请输入课程 slug';
+              return;
+            }
+            this.loading = true;
+            this.error = '';
+            this.statusText = `正在请求 GET /api/courses/${this.slugInput.trim()}...`;
+            try {
+              const url = `${this.baseUrl.replace(/\/$/, '')}/api/courses/${encodeURIComponent(this.slugInput.trim())}`;
+              this.result = await this.requestJson(url, { method: 'GET' });
+              this.statusText = '单门课请求成功';
+            } catch (err) {
+              this.error = err.message;
+              this.statusText = '单门课请求失败';
+            } finally {
+              this.loading = false;
+            }
+          },
+          async createCourse() {
+            const payload = {
+              title: this.form.title,
+              slug: this.form.slug,
+              audience: this.form.audience,
+              goals: this.form.goals,
+              scope: this.form.scope,
+              preferred_chapter_count: this.form.preferred_chapter_count,
+              effective_char_min: this.form.effective_char_min,
+            };
+
+            this.loading = true;
+            this.error = '';
+            this.statusText = '正在请求 POST /api/courses...';
+            try {
+              const url = `${this.baseUrl.replace(/\/$/, '')}/api/courses`;
+              this.result = await this.requestJson(url, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+              });
+              this.slugInput = payload.slug;
+              this.statusText = '创建课程成功';
+            } catch (err) {
+              this.error = err.message;
+              this.statusText = '创建课程失败';
+            } finally {
+              this.loading = false;
+            }
+          },
+          async copyResult() {
+            if (!this.result) return;
+            try {
+              await navigator.clipboard.writeText(JSON.stringify(this.result, null, 2));
+              this.statusText = 'JSON 已复制到剪贴板';
+            } catch {
+              this.statusText = '复制失败';
+            }
+          },
+        };
+      }
+    </script>
+  </body>
+</html>

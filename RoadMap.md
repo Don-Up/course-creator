@@ -1530,25 +1530,112 @@ curl http://127.0.0.1:8000/api/courses
 **产出**：建课有 API 入口，三种失败各有明确状态码。
 
 **文件**
-- Modify: `apps/api/app/api/course_routes.py`
-- Modify: `apps/api/app/schemas.py`
+- Modify: `apps/api/app/api/course_routes.py`（加 `POST /api/courses`）
+- Modify: `apps/api/app/course_service.py`（**计划外**：门面加 `create_course(request)`——
+      P1.6 的分层规则要求路由只跟门面说话，路由不能自己拿 `courses_root`）
+- Modify: `apps/api/app/schemas.py`（加 `CourseCreated` 响应模型）
+- Modify: `apps/api/tests/test_schemas.py`（模型清单加 `CourseCreated`）
 - Create: `apps/api/tests/test_course_create_api.py`
 
 **接口**
-- Consumes: P1.6 的 `course_service`
-- Produces: `POST /api/courses` → 201 `{course, run_id, status}`；`CourseCreate`（`title` 2–120 · `slug` 正则 `^[a-z0-9]+(?:-[a-z0-9]+)*$` · `audience` 2–500 · `goals` 5–3000 · `scope` 2–3000 · `source_policy` 默认「允许使用用户资料与公开官方资料」· `delivery` 默认「Markdown + HTML」· `preferred_chapter_count` 默认 12（1–60）· `effective_char_min` 默认 12000（1000–50000）· `token_budget_mtokens` 可选（0.01–10000）· `provider` 默认 `codex_gateway` · `model` 默认 `llm-gateway--kimi-k3`）
+- Consumes: P1.6 的 `course_service` 门面；P1.5 的 `create_course_scaffold(request, courses_root)`
+  与 `CourseCreate`
+- Produces:
+  - `app/course_service.py::create_course(request: CourseCreate) -> dict[str, Any]`（门面）
+  - `app/schemas.py::CourseCreated`（`course` / `run_id` / `status` 三个键）
+  - `POST /api/courses` → 201 `{"course": {…6 键…}, "run_id": "<uuid4>", "status": "preparing"}`；
+    409 / 422 / 400
+- `CourseCreate` 本步**不改**：字段约束 P1.5 已经逐字实现
+  （`title` 2–120 · `slug` 正则 `^[a-z0-9]+(?:-[a-z0-9]+)*$` · `audience` 2–500 ·
+  `goals` 5–3000 · `scope` 2–3000 · `source_policy` 默认「允许使用用户资料与公开官方资料」·
+  `delivery` 默认「Markdown + HTML」· `preferred_chapter_count` 默认 12（1–60）·
+  `effective_char_min` 默认 12000（1000–50000）· `token_budget_mtokens` 可选（0.01–10000）·
+  `provider` 默认 `codex_gateway` · `model` 默认 `llm-gateway--kimi-k3`）。
+
+**写代码时的硬约定**
+
+**响应的三个键：**
+
+| 键 | 值 | 说明 |
+| --- | --- | --- |
+| `course` | P1.6 那 6 个键（`slug` / `title` / `description` / `chapters` / `status` / `duration`） | 落盘之后**从磁盘读回来**，所以跟 `GET /api/courses` 里那门课**一模一样**；不手拼、不镜像 `course.json` 的 11 个键 |
+| `run_id` | `str(uuid.uuid4())` | 本步只发一个 id，**不落库**——Run 表是 P2.1 的事 |
+| `status` | `"preparing"` | 这门课的**状态**，跟 `course.status` 同一个值：建好了，但还没有章节 |
+
+- `course` 用 `CourseSummary` 那 6 个键，**不是** `course.json` 的 11 个键。
+  11 个键的契约已经被 P1.5 的测试锁住，再在 `schemas.py` 里抄一份就是第二个事实源。
+  前端也只有一个 `Course` 类型（P1.8 要用），建课响应和列表响应用同一个形状才对得上。
+- `run_id` 现在是**占位**：本阶段没有 Run 表、没有事件、没有队列，这个 id 落不了地、查不到东西。
+  P2.1 建了 `runs` 表之后由它接管。**不要在报告里把它说成「已经有一次运行」。**
+
+**三种失败，各有各的状态码：**
+
+| 情况 | 谁拦的 | 状态码 |
+| --- | --- | --- |
+| slug **已被占用** | `create_course_scaffold` 抛 `FileExistsError` | **409** |
+| slug **不合法**（大写 / 含空格 / 含下划线） | Pydantic 校验 `CourseCreate.slug` | **422** |
+| 其它字段越界（`title` 只有 1 个字…） | Pydantic 校验 | **422** |
+| 路径护栏拒绝（安全网，正常到不了） | `_safe_course_root` 抛 `ValueError` | **400** |
+
+- **409 必须按异常类型判断**（`except FileExistsError`），**不许拿异常文案去比对**——
+  文案会被人改，按类型判断才不会。
+- 422 是 Pydantic 自己的校验错误（`RequestValidationError`），不用自己写。
+- 400 是安全网：slug 已经被 Pydantic 拦成 422 了，走到这里说明有别的路径漏进来了。
+
+**分层职责（跟 P1.6 同一套）：**
+- `app/course_service.py`：门面。`create_course(request)` 从 `get_settings().courses_root`
+  拿到 root，转手给 `scaffold.create_course_scaffold(request, root)`，落盘后**再从磁盘读回来**
+  那 6 个键。
+- `app/api/course_routes.py`：只做「调门面 → 变成 HTTP 响应」。路由**不 import**
+  `app.courses.scaffold`，**不 import** `app.courses.catalog`，也**不自己**拿 `courses_root`。
+
+**参考实现不要照抄的四处：**
+1. 参考的 POST 路由同时做：建 run record（`create_run_record`）、写 artifact
+   （`record_run_artifact`）、入队命令（`enqueue_command`）——那是 P2.1 / P2.2 / P6.x 的东西，
+   本阶段拿不到。**不许提前 import。**
+2. 参考的响应是 `{course, run_id, command_id, duplicate}`；本阶段的契约是
+   `{course, run_id, status}`。`command_id` / `duplicate` 是命令队列的字段。
+3. 参考的 `create_course_scaffold(payload)` 读 `Settings` 单例；本阶段是
+   `create_course_scaffold(request, courses_root)`，root 由门面显式传进去。
+4. 参考的 run 状态词汇是 `QUEUED`；本阶段**没有队列**，所以 `status` 是**课程**的状态
+   `preparing`，不假装有排队这件事。
+
+**测试约定：**
+- 必须用 `monkeypatch.setattr("app.course_service.get_settings", ...)` 把 root 指向
+  `tmp_path`——**不能在仓库真实的 `courses/` 里建课**，也不能污染示例课程。
+- 走真实 `TestClient`（跟 `test_scaffold_api.py` 一样），测的是 HTTP 状态码，不是函数返回值。
+
+**其它约定：**
+- 每个函数都要写完整文档注释（说明 + `Args` + `Returns`），中文说明、英文标识符。
+- `from typing import Any` 别漏（返回类型是 `dict[str, Any]`）。
+- 单行不超过 **92** 字符（中文按 2 列算）。
+- `npm run check:source-size` 过了（新文件都远低于 500 行）。
+- **不要** `git add` / `git commit` / `git push`——提交由开发者自己做。
 
 **步骤**
-- [ ] 写测试：合法请求 → **201**，响应含 `course.slug` 与一个非空 `run_id`
-- [ ] 写测试：slug 重复 → **409**
-- [ ] 写测试：slug 非法（大写 / 含空格 / 含下划线）→ **422**
-- [ ] 写测试：`title` 只有 1 个字符 → **422**
+- [ ] 写 `test_course_create_api.py`：合法请求 → **201**；`course.slug` 对、
+      `run_id` 非空、`status == "preparing"`；盘上落出了 `course.json` 和 6 个顶层目录
+- [ ] 写测试：同一个 slug 建两次 → 第二次 **409**，而且原来那份 `course.json` **没被改**
+- [ ] 写测试：slug 非法（大写 / 含空格 / 含下划线）→ **422**，而且**磁盘上什么都没留下**
+- [ ] 写测试：`title` 只有 1 个字符 → **422**；其它字段越界（`audience` / `goals` / `scope` /
+      `preferred_chapter_count` / `effective_char_min` / `token_budget_mtokens`）→ **422**
+- [ ] 写测试：两个不同的合法请求 → 两个**不同**的 `run_id`
+- [ ] 写测试：201 响应里的 `course` 跟 `GET /api/courses` 里那门课**完全一样**
 - [ ] 跑测试 → FAIL → 实现 → PASS
-- [ ] 提交：`git commit -m "feat: 暴露课程创建接口"`
+- [ ] 门面加 `create_course(request)`：落盘后从磁盘读回那 6 个键
+- [ ] `schemas.py` 加 `CourseCreated`，同步 `test_schemas.py` 的模型清单
+- [ ] 路由加 `POST ""`（201）；409 按 `FileExistsError` 判、400 按 `ValueError` 判
+- [ ] 跑 `pytest apps/api/tests` → 全绿
+- [ ] 跑 `npm run check:source-size` → 过
+- [ ] 写一份改动说明到 `docs/changes/2026-10-27/`（格式照 `.claude/skills/code-change-report/SKILL.md`，
+      报告里出现的函数都要带文档注释）
+- [ ] **不要** `git add` / `git commit` / `git push`——提交由开发者自己做
 
 **验收**
 ```bash
-apps/api/.venv/bin/python -m pytest apps/api/tests/test_course_create_api.py -v
+apps/api/.venv/Scripts/python.exe -m pytest apps/api/tests -v
+apps/api/.venv/bin/python -m pytest apps/api/tests -v
+npm run check:source-size
 curl -X POST http://127.0.0.1:8000/api/courses -H 'Content-Type: application/json' \
   -d '{"title":"测试课程","slug":"test-course","audience":"有 Python 基础的学习者",
        "goals":"学会构建一个可恢复的 Agent","scope":"从零到发布","preferred_chapter_count":2}'
